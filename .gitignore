@@ -1,0 +1,7 @@
+*.o
+*.a
+launchmail
+tags
+libslack/slack
+libslack/test/*
+libslack/tags

@@ -1,0 +1,52 @@
+Date: Sometime yesterday
+From: raf@localhost
+To: raf@localhost, raf @ eccles . raf . home ,
+ "abc, \" def, \" ghi ( ) [ ] " < raf
+ @
+ localhost
+ >,
+ raf@[127.0.0.1]
+ (an
+ (ugly (nested
+ \(comment) is, ) , this
+ is ),
+ raf@eccles, raf@localhost.raf.home,
+ "abc,
+ " < raf @ eccles . raf. home > ,     
+ raf@[127.0.0.1] , raf @ [ 
+ 127.0.0.1 
+ ] 
+Cc: raf@localhost, raf @ eccles . raf . home ,
+ "abc, \" def, \" ghi ( ) [ ] " < raf
+ @
+ localhost
+ >,
+ raf@[127.0.0.1]
+ (an
+ (ugly (nested
+ \(comment) is, ) , this
+ is ),
+ raf@eccles, raf@localhost.raf.home,
+ "abc,
+ " < raf @ eccles . raf. home > ,     
+ raf@[127.0.0.1] , raf @ [ 
+ 127.0.0.1 
+ ] 
+Bcc: raf@localhost, raf @ eccles . raf . home ,
+ "abc, \" def, \" ghi ( ) [ ] " < raf
+ @
+ localhost
+ >,
+ raf@[127.0.0.1]
+ (an
+ (ugly (nested
+ \(comment) is, ) , this
+ is ),
+ raf@eccles, raf@localhost.raf.home,
+ "abc,
+ " < raf @ eccles . raf. home > ,     
+ raf@[127.0.0.1] , raf @ [ 
+ 127.0.0.1 
+ ] 
+
+this is a test

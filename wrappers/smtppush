@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# launchmail - http://libslack.org/launchmail/
+#
+# Copyright (C) 2000 raf <raf@raf.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# or visit http://www.gnu.org/copyleft/gpl.html
+
+# A wrapper to make launchmail look like smtppush
+# (http://www.toesinperil.com/~me/smtppush/)
+# To use this in mutt, put this in your ~/.muttrc:
+#
+#   set sendmail="/usr/local/bin/smtppush -S smtpserver"
+#
+# 20001127 raf <raf@raf.org>
+
+usage="usage: $0 [-hvV] [-f FROM] [-S SMTPSERVER] [-p PORT] RECIPIENT..."
+launchmail="/usr/local/bin/launchmail"
+
+die() { echo "$@" >&2; exit 1; }
+
+quote_check()
+{
+	case "$1" in
+		*\'*)
+			echo $usage >&2
+			die "Sorry, I don't do single quotes: $1" >&2
+			;;
+	esac
+}
+
+args=""
+server="${SMTPSERVER:-localhost}"
+
+while getopts "hvVf:S:p:" opt
+do
+	case $opt in
+		\?) echo $usage >&2; exit 1;;
+		h) args="$args -h";;
+		v) args="$args -d3";;
+		V) args="$args -v";;
+		f) quote_check "$OPTARG"; args="$args -f '$OPTARG'";;
+		S) quote_check "$OPTARG"; server="'$OPTARG'";;
+		p) quote_check "$OPTARG"; args="$args -P '$OPTARG'";;
+	esac
+done
+
+shift `expr $OPTIND - 1`
+
+for arg in ${1+"$@"}
+do
+	quote_check "$arg"
+	args="$args -t '$arg'"
+done
+
+args="$args -q -N -S $server"
+
+eval exec "$launchmail" $args
+
+# vi:set ts=4 sw=4

@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Run launchmail with a bunch of arguments
+
+echo testing... | ../launchmail \
+	-s subject \
+	-t to1@raf.org \
+	-t "to2@raf.org, to3@raf.org" \
+	-T tofile \
+	-c cc1@raf.org \
+	-c "cc2@raf.org ,cc3@raf.org" \
+	-C ccfile \
+	-b bcc1@raf.org \
+	-b "bcc2@raf.org,bcc3@raf.org" \
+	-B bccfile \
+	-x "Sender: sender@raf.org" \
+	-x "X-Mailer: The Frobozz Magic Mailer" \
+	-X headerfile \
+	-g \
+	-S localhost \
+	-P 25 \
+	-o 15 \
+	-d1 \
+	"$@"
+
+# Test that a line containing only a `.' doesn't terminate the SMTP session
+
+../launchmail -d1 -S localhost -t raf dot.message
+
+# Test that long lines are preserved
+
+../launchmail -d1 -S localhost -t raf longline.message
+
+# Test a line ending with `.' immediately after a buffer read boundary
+
+../launchmail -d1 -S localhost -t raf dotboundary.message
+
+# Test the --readto option
+
+../launchmail -d1 -S localhost -r readto.message
+
