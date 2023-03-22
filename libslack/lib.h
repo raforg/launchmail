@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,38 +14,40 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_LIB_H
 #define LIBSLACK_LIB_H
 
+#include <slack/std.h>
+#include <slack/agent.h>
+#include <slack/coproc.h>
 #include <slack/daemon.h>
 #include <slack/err.h>
 #include <slack/fio.h>
 #include <slack/hsort.h>
 #include <slack/lim.h>
+#include <slack/link.h>
 #include <slack/list.h>
-#include <slack/log.h>
+#include <slack/locker.h>
 #include <slack/map.h>
 #include <slack/mem.h>
 #include <slack/msg.h>
 #include <slack/net.h>
-#include <slack/opt.h>
 #include <slack/prog.h>
 #include <slack/prop.h>
+#include <slack/pseudo.h>
 #include <slack/sig.h>
 #include <slack/str.h>
 
-#ifdef NEEDS_SPRINTF
+#ifndef HAVE_SNPRINTF
 #include <slack/snprintf.h>
 #endif
 
-#ifdef NEEDS_VSSCANF
+#ifndef HAVE_VSSCANF
 #include <slack/vsscanf.h>
 #endif
 

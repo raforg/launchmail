@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,24 +14,25 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 /*
 
 =head1 NAME
 
-I<vsscanf()> - I<sscanf()> with a I<va_list> parameter
+I<vsscanf(3)> - I<sscanf(3)> with a I<va_list> parameter
 
 =head1 SYNOPSIS
 
+    #include <slack/std.h>
+    #ifndef HAVE_VSSCANF
     #include <slack/vsscanf.h>
+    #endif
 
-    int vsscanf(const char *str, const char *fmt, va_list args);
+    int vsscanf(const char *str, const char *format, va_list args);
 
 =head1 DESCRIPTION
 
@@ -40,37 +41,70 @@ as for I<vprintf(3)>.
 
 Note that this may not be identical in behaviour to the I<sscanf(3)> on your
 system because this was implemented from scratch for systems that lack
-I<vsscanf()>. So your I<sscanf(3)> and this I<vsscanf()> share no common
-code. Your I<sscanf(3)> may support extensions that I<vsscanf()> does not
-support. I<vsscanf()> complies with most of the ANSI C requirements for
-I<sscanf()> except:
+I<vsscanf(3)>. So your I<sscanf(3)> and this I<vsscanf(3)> share no common
+code. Your I<sscanf(3)> may support extensions that I<vsscanf(3)> does not
+support. I<vsscanf(3)> complies with all of the relevant I<ISO C>
+requirements for I<sscanf(3)> except:
 
 =over 4
 
 =item *
 
-C<fmt> may not be a multibyte character string;
-
-=item *
-
-The current locale is ignored; and
+C<format> may not be a multi-byte character string; and
 
 =item *
 
 Scanning a pointer (C<"%p">) may not exactly match the format that your
 I<printf(3)> uses to print pointers on your system. This version accepts
-pointers as a hexadecimal number with or without a preceeded C<0x>.
+pointers as a hexadecimal number, with or without a preceding C<0x>.
 
 =back
 
-=head1 BUGS
+=head1 MT-Level
 
-Does not support multibyte C<fmt> string.
+I<MT-Safe> if and only if no thread calls I<setlocale(3)>. Since locales are
+inherently non-threadsafe as they are currently defined, this shouldn't be a
+problem. Just call C<setlocale(LC_ALL, "")> once after program
+initialisation and never again (at least not after creating any threads). If
+it is a problem, just change C<localeconv()-E<gt>decimal_point[0]> in the
+source to C<'.'>, and it will be I<MT-Safe> at the expense of losing locale
+support.
 
-The current locale is ignored.
+=head1 EXAMPLE
 
-Scanning C<"%p"> might not exactly match the format used by I<printf(3)> on
-your system (but probably will).
+    #include <slack/std.h>
+    #ifndef HAVE_VSSCANF
+    #include <slack/vsscanf.h>
+    #endif
+
+    int fdscanf(int fd, const char *format, ...)
+    {
+        va_list args;
+        char buf[BUFSIZ];
+        ssize_t bytes;
+        int rc;
+        
+        if ((bytes = read(fd, buf, BUFSIZ)) <= 0)
+            return bytes;
+
+        buf[bytes] = '\0';
+
+        va_start(args, format);
+        rc = vsscanf(buf, format, args);
+        va_end(args);
+
+        return rc;
+    }
+
+    int main()
+    {
+        int rc, a = 0, b = 0;
+
+        rc = fdscanf(STDIN_FILENO, "%d %d", &a, &b);
+        printf("rc = %d a = %d b = %d\n", rc, a, b);
+
+        return (rc == 2) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
 
 =head1 NOTE
 
@@ -79,36 +113,41 @@ I<gcc(1)> warns that:
     warning: ANSI C does not support the `L' length modifier
     warning: use of `l' length character with `e' type character
 
-However, the ANSI C standard (Section 7.9.6.2) states that:
+However, the I<ANSI C> standard (Section 7.9.6.2) states that:
 
-"Finally, the conversion specifiers C<e>, C<f>, and C<g> shall be preceeded
-by C<l> if the corresponding argument is a pointer to C<double> rather than
-a pointer to C<float>, or by C<L> if it is a pointer to C<long double>."
+"Finally, the conversion specifiers C<e>, C<f>, and C<g> shall be preceded
+by C<l> if the corresponding argument is a pointer to I<double> rather than
+a pointer to C<float>, or by C<L> if it is a pointer to I<long double>."
 
 I have chosen to disregard the I<gcc(1)> warnings in favour of the standard.
 If you see the above warnings when compiling the unit tests for
-I<vsscanf()>, just ignore them.
+I<vsscanf(3)>, just ignore them.
 
 =head1 SEE ALSO
 
-L<sscanf(3)|sscanf(3)>
+I<libslack(3)>,
+I<sscanf(3)>
 
 =head1 AUTHOR
 
-20000902 raf <raf@raf.org>
+20230313 raf <raf@raf.org>
 
 =cut
 
 */
 
+#include "config.h"
 #include "std.h"
 
-int vsscanf(const char *str, const char *fmt, va_list args)
+#include <locale.h>
+
+int vsscanf(const char *str, const char *format, va_list args)
 {
 	const char *f, *s;
+	const char point = localeconv()->decimal_point[0];
 	int cnv = 0;
 
-	for (s = str, f = fmt; *f; ++f)
+	for (s = str, f = format; *f; ++f)
 	{
 		if (*f == '%')
 		{
@@ -139,10 +178,10 @@ int vsscanf(const char *str, const char *fmt, va_list args)
 				case 'd': case 'i': case 'o': case 'u': case 'x': case 'X':
 				case 'p':
 				{
-					static char types[] = "diouxXp";
-					static int bases[] = { 10, 0, 8, 10, 16, 16, 16 };
-					static char digitset[] = "0123456789abcdefABCDEF";
-					static int setsizes[] = { 10, 0, 0, 0, 0, 0, 0, 0, 8, 0, 10, 0, 0, 0, 0, 0, 22 };
+					static const char types[] = "diouxXp";
+					static const int bases[] = { 10, 0, 8, 10, 16, 16, 16 };
+					static const char digitset[] = "0123456789abcdefABCDEF";
+					static const int setsizes[] = { 10, 0, 0, 0, 0, 0, 0, 0, 8, 0, 10, 0, 0, 0, 0, 0, 22 };
 					int base = bases[strchr(types, *f) - types];
 					int setsize;
 					char buf[513];
@@ -195,7 +234,7 @@ int vsscanf(const char *str, const char *fmt, va_list args)
 					if (width <= 0 || width > 512) width = 512;
 					MATCH(*s == '+' || *s == '-')
 					MATCHES_ACTION(isdigit((int)(unsigned int)*s), digit = 1)
-					MATCH(*s == '.')
+					MATCH(*s == point)
 					MATCHES_ACTION(isdigit((int)(unsigned int)*s), digit = 1)
 					MATCHES_ACTION(digit && (*s == 'e' || *s == 'E'),
 						MATCH(*s == '+' || *s == '-')
@@ -237,8 +276,9 @@ int vsscanf(const char *str, const char *fmt, va_list args)
 					if (width <= 0) width = INT_MAX;
 					if (*++f == '^') setcomp = 1, ++f;
 					end = strchr((*f == ']') ? f + 1 : f, ']');
-					if (!end) return FAIL; /* Should be cnv to match glibc-2.2 */
-					setsize = end - f;
+					if (!end) return FAIL; /* Could be cnv to match glibc-2.2 */
+					setsize = end - f;     /* But FAIL matches the C standard */
+					if (!*s) return FAIL;
 					while (width-- && *s)
 					{
 						if (!setcomp && !memchr(f, *s, setsize)) break;
@@ -308,12 +348,12 @@ int vsscanf(const char *str, const char *fmt, va_list args)
 #include <math.h>
 #include <float.h>
 
-int test_sscanf(const char *str, const char *fmt, ...)
+int test_sscanf(const char *str, const char *format, ...)
 {
 	int rc;
 	va_list args;
-	va_start(args, fmt);
-	rc = vsscanf(str, fmt, args);
+	va_start(args, format);
+	rc = vsscanf(str, format, args);
 	va_end(args);
 	return rc;
 }
@@ -340,7 +380,13 @@ int main(int ac, char **av)
 	char str[512];
 	int rc1, rc2;
 
-	printf("Testing: vsscanf\n");
+	if (ac == 2 && !strcmp(av[1], "help"))
+	{
+		printf("usage: %s [show]\n", *av);
+		return EXIT_SUCCESS;
+	}
+
+	printf("Testing: %s\n", "vsscanf");
 
 	/* Test one of everything */
 
@@ -348,15 +394,25 @@ int main(int ac, char **av)
 		p1 = (void *)0xdeadbeef
 	);
 
-	rc1 = sscanf(str,
-		" abc %hd %d %ld %e %le %Le xyz %p %[^abc ] %3c %s%hn %n%% %ln",
+	rc1 = sscanf(str, " abc %hd %d %ld %e %le %Le xyz %p %127[^abc ] %3c %127s %hn %n%% %ln",
 		&si1, &i1, &li1, &f1, &d1, &ld1, &p1, b1, c1, s1, &sn1, &in1, &ln1
 	);
 
-	rc2 = test_sscanf(str,
-		" abc %hd %d %ld %e %le %Le xyz %p %[^abc ] %3c %s%hn %n%% %ln",
+	rc2 = test_sscanf(str, " abc %hd %d %ld %e %le %Le xyz %p %127[^abc ] %3c %127s %hn %n%% %ln",
 		&si2, &i2, &li2, &f2, &d2, &ld2, &p2, b2, c2, s2, &sn2, &in2, &ln2
 	);
+
+	if (ac >= 2 && !strcmp(av[1], "show"))
+	{
+		printf("in: %s\n", str);
+		printf("rc1=%d, rc2=%d\n", rc1, rc2);
+		printf("out1: si1<%hd> i1<%d> li1<%ld> f1<%e> d1<%le> ld1<%Le> p1<%p> b1<%s> c1<%s> s1<%s> sn1<%hd> in1<%d> ln1<%ld>\n",
+			si1, i1, li1, f1, d1, ld1, p1, b1, c1, s1, sn1, in1, ln1
+		);
+		printf("out2: si2<%hd> i2<%d> li2<%ld> f2<%e> d2<%le> ld2<%Le> p2<%p> b2<%s> c2<%s> s2<%s> sn2<%hd> in2<%d> ln2<%ld>\n",
+			si2, i2, li2, f2, d2, ld2, p2, b2, c2, s2, sn2, in2, ln2
+		);
+	}
 
 	if (rc1 != rc2)
 		++errors, printf("Test1: failed (returned %d, not %d)\n", rc2, rc1);
@@ -389,9 +445,9 @@ int main(int ac, char **av)
 
 	/* Test different numeric bases */
 
-#define TEST_NUM(i, var, tst, str, fmt) \
-	rc1 = sscanf(str, fmt, &s##var##1, &var##1, &l##var##1); \
-	rc2 = test_sscanf(str, fmt, &s##var##2, &var##2, &l##var##2); \
+#define TEST_NUM(i, var, tst, str, format) \
+	rc1 = sscanf(str, format, &s##var##1, &var##1, &l##var##1); \
+	rc2 = test_sscanf(str, format, &s##var##2, &var##2, &l##var##2); \
 	if (rc1 != rc2) \
 		++errors, printf("Test%d: failed (returned %d, not %d)\n", (i), rc2, rc1); \
 	if (s##var##1 != s##var##2) \
@@ -401,9 +457,9 @@ int main(int ac, char **av)
 	if (l##var##1 != l##var##2) \
 		++errors, printf("Test%d: failed (%%l%c scanned %ld, not %ld)\n", (i), tst, l##var##2, l##var##1)
 
-#define TEST_STR(i, len, str, fmt) \
-	rc1 = sscanf(str, fmt, b1, c1, s1); \
-	rc2 = test_sscanf(str, fmt, b2, c2, s2); \
+#define TEST_STR(i, len, str, format) \
+	rc1 = sscanf(str, format, b1, c1, s1); \
+	rc2 = test_sscanf(str, format, b2, c2, s2); \
 	if (rc1 != rc2) \
 		++errors, printf("Test%d: failed (returned %d, not %d)\n", (i), rc2, rc1); \
 	if (strcmp(b1, b2)) \
@@ -440,15 +496,15 @@ int main(int ac, char **av)
 
 	/* Test error reporting */
 
-#define TEST_ERR(i, str, fmt) \
-	rc1 = sscanf(str, fmt); \
-	rc2 = test_sscanf(str, fmt); \
+#define TEST_ERR(i, str, format) \
+	rc1 = sscanf(str, format); \
+	rc2 = test_sscanf(str, format); \
 	if (rc1 != rc2) \
 		++errors, printf("Test%d: failed (returned %d, not %d)\n", (i), rc2, rc1)
 
-#define TEST_ERR_ARG(i, str, fmt, var) \
-	rc1 = sscanf(str, fmt, &var##1); \
-	rc2 = test_sscanf(str, fmt, &var##1); \
+#define TEST_ERR_ARG(i, str, format, var) \
+	rc1 = sscanf(str, format, &var##1); \
+	rc2 = test_sscanf(str, format, &var##1); \
 	if (rc1 != rc2) \
 		++errors, printf("Test%d: failed (returned %d, not %d)\n", (i), rc2, rc1)
 
@@ -464,17 +520,17 @@ int main(int ac, char **av)
 	TEST_ERR_ARG(44, "", "%f", f);
 	TEST_ERR_ARG(45, "", "%g", f);
 	TEST_ERR_ARG(46, "", "%G", f);
-	TEST_ERR_ARG(47, "", "%[^]", *b);
+	TEST_ERR_ARG(47, "", "%[abc]", *b); /* This fails when comparing against glibc */
 	TEST_ERR_ARG(48, "", "%c", *c);
 	TEST_ERR(49, "a", "%%");
 	TEST_ERR(50, "a", "b");
 
 	if (errors)
-		printf("%d/50 tests failed\n", errors);
+		printf("%d/50 tests failed (This system's sscanf(3) might be wrong))\n", errors);
 	else
 		printf("All tests passed\n");
 
-	return 0;
+	return (errors == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 #endif

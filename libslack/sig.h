@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,11 +14,9 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_SIG_H
@@ -28,16 +26,18 @@
 
 #include <slack/hdr.h>
 
-typedef void sighandler_t(int signo);
+typedef void signal_handler_t(int signo);
+typedef void signal_siginfo_handler_t(int signo, siginfo_t *siginfo, void *context);
 
-__START_DECLS
-int signal_set_handler __PROTO ((int signo, int flags, sighandler_t *handler));
-int signal_addset __PROTO ((int signo_handled, int signo_masked));
-int signal_received __PROTO ((int signo));
-int signal_raise __PROTO ((int signo));
-int signal_handle __PROTO ((int signo));
-void signal_handle_all __PROTO ((void));
-__END_DECLS
+_begin_decls
+int signal_set_handler(int signo, int flags, signal_handler_t *handler);
+int signal_set_siginfo_handler(int signo, int flags, signal_siginfo_handler_t *siginfo_handler);
+int signal_addset(int signo_handled, int signo_blocked);
+int signal_received(int signo);
+int signal_raise(int signo);
+int signal_handle(int signo);
+void signal_handle_all(void);
+_end_decls
 
 #endif
 

@@ -1,7 +1,7 @@
 #
 # libslack - http://libslack.org/
 #
-# Copyright (C) 1999, 2000 raf <raf@raf.org>
+# Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,80 +14,112 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-# or visit http://www.gnu.org/copyleft/gpl.html
+# along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
 
-# 20000902 raf <raf@raf.org>
+# 20230313 raf <raf@raf.org>
 
 CC := gcc
-TEST := /usr/bin/test
+# CC := cc
+# CC := other
+AR := ar
+RANLIB := ranlib
+POD2MAN := pod2man
+POD2HTML := pod2html
+GZIP := gzip -f -9
+
+DESTDIR :=
 PREFIX := /usr/local
+# PREFIX := /usr/pkg
 APP_INSDIR := $(PREFIX)/bin
 LIB_INSDIR := $(PREFIX)/lib
-MAN_INSDIR := $(PREFIX)/man
+MAN_SYSDIR := $(PREFIX)/share/man
+MAN_LOCDIR := $(PREFIX)/share/man
+ifeq ($(PREFIX),/usr)
+MAN_INSDIR := $(MAN_SYSDIR)
+else
+MAN_INSDIR := $(MAN_LOCDIR)
+endif
 HDR_INSDIR := $(PREFIX)/include
+DATA_INSDIR := $(PREFIX)/share
 APP_MANSECT := 1
 LIB_MANSECT := 3
 APP_MANDIR := $(MAN_INSDIR)/man$(APP_MANSECT)
 LIB_MANDIR := $(MAN_INSDIR)/man$(LIB_MANSECT)
 APP_MANSECTNAME := User Commands
 LIB_MANSECTNAME := C Library Functions - libslack
+MAN_GZIP := 1
 
-CCFLAGS += -O2
+CCFLAGS += -O3
 CCFLAGS += -Wall -pedantic
-# CCFLAGS += -Wno-unused-value
 
-CLEAN_FILES += tags core Makefile.bak .makefile.bak MANIFEST pod2html-*
+# CCFLAGS += -xO4
 
-SLACK_IS_ROOT := 1
+CLEAN_FILES += tags core Makefile.bak .makefile.bak pod2htm*
+
 SLACK_SRCDIR := .
 SLACK_INCDIRS := .
 SLACK_LIBDIRS := .
 include $(SLACK_SRCDIR)/macros.mk
 
-.PHONY: all ready test man html install uninstall
+.PHONY: all ready test check man html install uninstall dist rpm deb sol
 
 all: ready $(ALL_TARGETS)
 ready: $(READY_TARGETS)
-test: all $(TEST_TARGETS)
+check test: all $(TEST_TARGETS)
 man: $(MAN_TARGETS)
 html: $(HTML_TARGETS)
 install: all $(INSTALL_TARGETS)
 uninstall: $(UNINSTALL_TARGETS)
+dist: $(DIST_TARGETS)
+rpm: $(RPM_TARGETS)
+deb: $(DEB_TARGETS)
+sol: $(SOL_TARGETS)
+obsd: $(OBSD_TARGETS)
+fbsd: $(FBSD_TARGETS)
+nbsd: $(NBSD_TARGETS)
+osx: $(OSX_TARGETS)
 
-.PHONY: help help-macros depend dep clean clobber distclean dist
+.PHONY: help help-macros depend clean clobber distclean
 
 help::
 	@echo "This makefile provides the following targets."; \
 	echo; \
-	echo "make help                  -- shows this list of targets"; \
-	echo "make help-macros           -- shows the values of all make macros"; \
-	echo "make ready                 -- prepares the source directory for make"; \
-	echo "make all                   -- makes $(SLACK_TARGET) (default)"; \
-	echo "make test                  -- generates and performs library unit tests"; \
-	echo "make man                   -- generates all manpages"; \
-	echo "make html                  -- generates all manpages in html"; \
-	echo "make install               -- installs everything under $(PREFIX)"; \
-	echo "make uninstall             -- uninstalls everything"; \
-	echo "make depend                -- generates source dependencies using makedepend"; \
-	echo "make tags                  -- generates a tags file using ctags"; \
-	echo "make clean                 -- removes object files, tags, core and Makefile.bak"; \
-	echo "make clobber               -- same as clean but also removes $(SLACK_TARGET) and tests"; \
-	echo "make distclean             -- same as clobber but also removes source dependencies"; \
-	echo "make MANIFEST              -- creates the MANIFEST file"; \
-	echo "make dist                  -- creates the distribution: ../$(SLACK_DIST)"; \
+	echo " help                 -- shows this list of targets"; \
+	echo " help-macros          -- shows the values of all make macros"; \
+	echo " all                  -- makes $(SLACK_TARGET) (default)"; \
+	echo " ready                -- prepares the source directory for compilation"; \
+	echo " test                 -- makes and runs library unit tests"; \
+	echo " check                -- same as test"; \
+	echo " man                  -- generates all manpages"; \
+	echo " html                 -- generates all manpages in html"; \
+	echo " install              -- installs everything under $(PREFIX)"; \
+	echo " uninstall            -- uninstalls everything from $(PREFIX)"; \
+	echo " depend               -- generates source dependencies using makedepend"; \
+	echo " tags                 -- generates a tags file using ctags"; \
+	echo " clean                -- removes object files, tags, core and Makefile.bak"; \
+	echo " clobber              -- same as clean but also removes $(SLACK_TARGET) and tests"; \
+	echo " distclean            -- same as clobber but also removes source dependencies"; \
+	echo " dist                 -- makes the distribution: ../$(SLACK_DIST)"; \
+	echo " rpm                  -- makes source and binary rpm packages"; \
+	echo " deb                  -- makes source and binary debian packages"; \
+	echo " sol                  -- makes binary solaris package"; \
+	echo " obsd                 -- makes binary openbsd package"; \
+	echo " fbsd                 -- makes binary freebsd package"; \
+	echo " nbsd                 -- makes binary netbsd package"; \
+	echo " osx                  -- makes binary macosx package"; \
+	echo; \
+	echo " slack.swig           -- makes SWIG input file for libslack"; \
 	echo
 
 help-macros::
 	@echo "CC = $(CC)"; \
-	echo "TEST = $(TEST)"; \
 	echo "PREFIX = $(PREFIX)"; \
 	echo "APP_INSDIR = $(APP_INSDIR)"; \
 	echo "LIB_INSDIR = $(LIB_INSDIR)"; \
 	echo "MAN_INSDIR = $(MAN_INSDIR)"; \
 	echo "HDR_INSDIR = $(HDR_INSDIR)"; \
+	echo "DATA_INSDIR = $(DATA_INSDIR)"; \
 	echo "APP_MANSECT = $(APP_MANSECT)"; \
 	echo "LIB_MANSECT = $(LIB_MANSECT)"; \
 	echo "APP_MANDIR = $(APP_MANDIR)"; \
@@ -105,16 +137,23 @@ help-macros::
 	echo "UNINSTALL_TARGETS = $(UNINSTALL_TARGETS)"; \
 	echo "CLEAN_FILES = $(CLEAN_FILES)"; \
 	echo "CLOBBER_FILES = $(CLOBBER_FILES)"; \
+	echo "DIST_TARGETS = $(DIST_TARGETS)"; \
+	echo "RPM_TARGETS = $(RPM_TARGETS)"; \
+	echo "DEB_TARGETS = $(DEB_TARGETS)"; \
+	echo "SOL_TARGETS = $(SOL_TARGETS)"; \
+	echo "OBSD_TARGETS = $(OBSD_TARGETS)"; \
+	echo "FBSD_TARGETS = $(FBSD_TARGETS)"; \
+	echo "NBSD_TARGETS = $(NBSD_TARGETS)"; \
+	echo "OSX_TARGETS = $(OSX_TARGETS)"; \
 	echo
-
-MANIFEST:
-	@find $(SLACK_SRCDIR) -name \* -print > $(SLACK_SRCDIR)/MANIFEST
 
 tags: $(TAG_FILES)
 	@ctags $(TAG_FILES)
 
 depend: ready $(DEPEND_CFILES) $(DEPEND_HFILES)
 	@makedepend $(SLACK_CPPFLAGS) $(DEPEND_CFILES)
+
+# makedepend $(SLACK_CPPFLAGS) $(DEPEND_CFILES)
 
 clean::
 	@rm -rf $(CLEAN_FILES)
@@ -123,17 +162,7 @@ clobber::
 	@rm -rf $(CLEAN_FILES) $(CLOBBER_FILES)
 
 distclean:: clobber
-	@perl -pi -e 'last if /[D]O NOT DELETE/;' $(SLACK_SRCDIR)/Makefile
-
-dist: distclean MANIFEST
-	@src=`basename \`pwd\``; \
-	dst=$(SLACK_ID); \
-	cd ..; \
-	$(TEST) "$$src" != "$$dst" -a ! -e "$$dst" && ln -s $$src $$dst; \
-	tar chzf $(SLACK_DIST) $$dst; \
-	$(TEST) -L "$$dst" && rm -f $$dst; \
-	rm $$src/MANIFEST; \
-	tar tzf $$dst.tar.gz
+	@perl -pi -e 'last if /[D]O NOT DELETE/;' $(patsubst %, %/Makefile, $(SLACK_SRCDIR) $(SLACK_SUBDIRS))
 
 include $(SLACK_SRCDIR)/rules.mk
 

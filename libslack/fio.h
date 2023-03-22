@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,32 +14,38 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_FIO_H
 #define LIBSLACK_FIO_H
 
+#include <fcntl.h>
 #include <sys/types.h>
 
 #include <slack/hdr.h>
 
-__START_DECLS
-char *fgetline __PROTO ((char *line, size_t size, FILE *stream));
-int fcntl_set_flag __PROTO ((int fd, int flag));
-int fcntl_clear_flag __PROTO ((int fd, int flag));
-int fcntl_lock __PROTO ((int fd, int cmd, int type, int whence, int start, int len));
-int nonblock_set __PROTO ((int fd, int arg));
-int nonblock_on __PROTO ((int fd));
-int nonblock_off __PROTO ((int fd));
-int fifo_exists __PROTO ((const char *path, int prepare));
-int fifo_has_reader __PROTO ((const char *path, int prepare));
-int fifo_open __PROTO ((const char *path, mode_t mode, int lock));
-__END_DECLS
+_begin_decls
+char *fgetline(char *line, size_t size, FILE *stream);
+char *fgetline_unlocked(char *line, size_t size, FILE *stream);
+int read_timeout(int fd, long sec, long usec);
+int write_timeout(int fd, long sec, long usec);
+int rw_timeout(int fd, long sec, long usec);
+int nap(long sec, long usec);
+int fcntl_set_flag(int fd, int flag);
+int fcntl_clear_flag(int fd, int flag);
+int fcntl_set_fdflag(int fd, int flag);
+int fcntl_clear_fdflag(int fd, int flag);
+int fcntl_lock(int fd, int cmd, int type, int whence, int start, int len);
+int nonblock_set(int fd, int arg);
+int nonblock_on(int fd);
+int nonblock_off(int fd);
+int fifo_exists(const char *path, int prepare);
+int fifo_has_reader(const char *path, int prepare);
+int fifo_open(const char *path, mode_t mode, int lock, int *writefd);
+_end_decls
 
 #endif
 

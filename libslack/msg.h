@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,11 +14,9 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_MSG_H
@@ -26,31 +24,60 @@
 
 #include <stdarg.h>
 
+#include <sys/syslog.h>
+
 #include <slack/hdr.h>
+#include <slack/locker.h>
 
 #ifndef MSG_SIZE
 #define MSG_SIZE 8192
 #endif
 
 typedef struct Msg Msg;
+typedef void msg_out_t(void *data, const void *mesg, size_t mesglen);
+typedef int msg_filter_t(void **mesgp, const void *mesg, size_t mesglen);
+typedef void msg_release_t(void *data);
 
-#undef msg_destroy
-
-__START_DECLS
-void msg_release __PROTO ((Msg *msg));
-#define msg_destroy(msg) msg_destroy_fn(&(msg))
-void *msg_destroy_fn __PROTO ((Msg **msg));
-void msg_out __PROTO ((Msg *dst, const char *fmt, ...));
-void vmsg_out __PROTO ((Msg *dst, const char *fmt, va_list args));
-Msg *msg_create_fd __PROTO ((int fd));
-Msg *msg_create_stderr __PROTO ((void));
-Msg *msg_create_stdout __PROTO ((void));
-Msg *msg_create_file __PROTO ((const char *path));
-Msg *msg_create_syslog __PROTO ((const char *ident, int option, int facility));
-Msg *msg_create_plex __PROTO ((Msg *msg1, Msg *msg2));
-int msg_add_plex __PROTO ((Msg *msg, Msg *item));
-const char *msg_set_timestamp_format __PROTO ((const char *format));
-__END_DECLS
+_begin_decls
+Msg *msg_create(int type, msg_out_t *out, void *data, msg_release_t *destroy);
+Msg *msg_create_with_locker(Locker *locker, int type, msg_out_t *out, void *data, msg_release_t *destroy);
+int msg_rdlock(Msg *mesg);
+int msg_wrlock(Msg *mesg);
+int msg_unlock(Msg *mesg);
+void msg_release(Msg *mesg);
+void *msg_destroy(Msg **mesg);
+void msg_out(Msg *dst, const char *format, ...);
+void msg_out_unlocked(Msg *dst, const char *format, ...);
+void vmsg_out(Msg *dst, const char *format, va_list args);
+void vmsg_out_unlocked(Msg *dst, const char *format, va_list args);
+Msg *msg_create_fd(int fd);
+Msg *msg_create_fd_with_locker(Locker *locker, int fd);
+Msg *msg_create_stderr(void);
+Msg *msg_create_stderr_with_locker(Locker *locker);
+Msg *msg_create_stdout(void);
+Msg *msg_create_stdout_with_locker(Locker *locker);
+Msg *msg_create_file(const char *path);
+Msg *msg_create_file_with_locker(Locker *locker, const char *path);
+Msg *msg_create_syslog(const char *ident, int option, int facility, int priority);
+Msg *msg_create_syslog_with_locker(Locker *locker, const char *ident, int option, int facility, int priority);
+Msg *msg_syslog_set_facility(Msg *mesg, int facility);
+Msg *msg_syslog_set_facility_unlocked(Msg *mesg, int facility);
+Msg *msg_syslog_set_priority(Msg *mesg, int priority);
+Msg *msg_syslog_set_priority_unlocked(Msg *mesg, int priority);
+Msg *msg_create_plex(Msg *msg1, Msg *msg2);
+Msg *msg_create_plex_with_locker(Locker *locker, Msg *msg1, Msg *msg2);
+int msg_add_plex(Msg *mesg, Msg *item);
+int msg_add_plex_unlocked(Msg *mesg, Msg *item);
+Msg *msg_create_filter(msg_filter_t *filter, Msg *mesg);
+Msg *msg_create_filter_with_locker(Locker *locker, msg_filter_t *filter, Msg *mesg);
+const char *msg_set_timestamp_format(const char *format);
+int msg_set_timestamp_format_locker(Locker *locker);
+int syslog_lookup_facility(const char *facility);
+int syslog_lookup_priority(const char *priority);
+const char *syslog_facility_str(int spec);
+const char *syslog_priority_str(int spec);
+int syslog_parse(const char *spec, int *facility, int *priority);
+_end_decls
 
 #endif
 

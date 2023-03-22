@@ -1,47 +1,22 @@
 /*
-
-=head1 NAME
-
-I<hsort(3)> - generic heap sort
-
-=head1 SYNOPSIS
-
-    #include <slack/hsort.h>
-
-    void hsort(void *base, size_t nelem, size_t size, int (*cmp)(const void *, const void *))
-
-=head1 DESCRIPTION
-
-I<hsort()> is an implementation of the heap sort algorithm. It sorts a table
-of data in place. C<base> points to the element at the base of the table.
-C<nelem> is the number of elements in the table. C<size> is the size of the
-elements in bytes. C<cmp> is the comparison function, which is called with
-two arguments that point to the elements being compared. As the function
-must return an integer less than, equal to, or greater than zero, so must
-the first argument to be considered be less than, equal to, or greater than
-the second.
-
-=head1 NOTES
-
-The comparison function need not compare every byte, so arbitrary data may
-be contained in the elements in addition to the values being compared.
-
-The order in the output of two items which compare as equal is
-unpredictable.
-
-=head1 SEE ALSO
-
-L<qsort(3)|qsort(3)>
-
-=head1 AUTHOR
-
-    Stephen Russell, Department of Computer Science,
-    University of Sydney, 2006.
-    Australia
-    1988 April 28
-
-=cut
-
+# libslack - http://libslack.org/
+*
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
+*
+* 20230313 raf <raf@raf.org>
 */
 
 /*
@@ -63,9 +38,98 @@ L<qsort(3)|qsort(3)>
  *      Australia.
  */
 
+/*
+
+=head1 NAME
+
+I<hsort(3)> - generic heap sort
+
+=head1 SYNOPSIS
+
+    #include <slack/std.h>
+    #include <slack/hsort.h>
+
+    typedef int hsort_cmp_t(const void *a, const void *b);
+    typedef int hsort_closure_cmp_t(const void *a, const void *b, const void *data);
+
+    void hsort(void *base, size_t n, size_t size, hsort_cmp_t *cmp);
+    void hsort_closure(void *base, size_t n, size_t size, hsort_closure_cmp_t *cmp, const void *data);
+
+=head1 DESCRIPTION
+
+I<hsort(3)> is an implementation of the heap sort algorithm. It sorts a
+table of data in place. C<base> points to the element at the base of the
+table. C<n> is the number of elements in the table. C<size> is the size of
+the elements in bytes. C<cmp> is the comparison function, which is called
+with two arguments that point to the elements being compared. As the
+function must return an integer less than, equal to, or greater than zero,
+so must the first argument to be considered be less than, equal to, or
+greater than the second. This is a drop-in replacement for I<qsort(3)>.
+I<hsort_closure(3)> is the same but it supports passing arbitrary data to
+the comparison function.
+
+=head1 NOTES
+
+The comparison function need not compare every byte, so arbitrary data may
+be contained in the elements in addition to the values being compared.
+
+The order in the output of two items which compare as equal is
+unpredictable.
+
+=head1 MT-Level
+
+I<MT-Safe>
+
+Note that the array being sorted will still have to be write-locked during
+I<hsort(3)> if it is accessed by other threads.
+
+=head1 EXAMPLE
+
+This examples sorts and prints an array of strings.
+
+    #include <slack/std.h>
+    #include <slack/hsort.h>
+
+    int cmp(const char **p1, const char **p2)
+    {
+        return strcmp(*p1, *p2);
+    }
+
+    int main(int ac, char **av)
+    {
+        char *string[4] = { "jkl", "ghi", "def", "abc" };
+        int i;
+
+        hsort(string, 4, sizeof string[0], (hsort_cmp_t *)cmp);
+
+        for (i = 0; i < 4; ++i)
+            printf("%s\n", string[i]);
+
+        return EXIT_SUCCESS;
+    }
+
+=head1 SEE ALSO
+
+I<qsort(3)>
+
+=head1 AUTHOR
+
+    Stephen Russell, Department of Computer Science,
+    University of Sydney, 2006.
+    Australia
+    1988 April 28
+
+    Header file, test code and manpage by raf <raf@raf.org>
+
+=cut
+
+*/
+
 #include "std.h"
 
 #include "hsort.h"
+
+#ifndef TEST
 
 #ifdef INLINE
 
@@ -97,7 +161,7 @@ static void swap
 	register char ctmp;
 
 	/*
-	 *  On machines with no alignment restrictions for int's,
+	 *  On machines with no alignment restrictions for ints,
 	 *  the following loop may improve performance if moving lots
 	 *  of data. It has been commented out for portability.
 
@@ -226,16 +290,121 @@ void hsort(void *base, size_t n, size_t size, hsort_cmp_t *cmp)
 	}
 }
 
-#ifdef TEST
-
-static char *string[4];
-
-int cmp(const char **p1, const char **p2)
+void hsort_closure(void *base, size_t n, size_t size, hsort_closure_cmp_t *cmp, const void *data)
 {
-	return strcmp(*p1, *p2);
+	register char *p, *q, *base0, *hi;
+	register unsigned int gap, g;
+
+	if (n < 2)
+		return;
+
+	base0 = (char *)base - size;            /* set up address of h[0] */
+
+	/*
+	 *  The gap is the distance, in bytes, between h[0] and h[i],
+	 *  for some i. It is also the distance between h[i] and h[2*i];
+	 *  that is, the distance between a node and its left child.
+	 *  The initial node of interest is h[n/2] (the rightmost
+	 *  interior node), so gap is set accordingly. The following is
+	 *  the only multiplication needed.
+	 */
+
+	gap = (n >> 1) * size;          /* initial gap is n/2*size */
+	hi = base0 + gap + gap;         /* calculate address of h[n] */
+	if (n & 1)
+		hi += size;             /* watch out for odd arrays */
+
+	/*
+	 *  Phase 1: Construct heap from random data.
+	 *
+	 *  For i = n/2 downto 2, ensure h[i] is greater than its
+	 *  children h[2*i] and h[2*i+1]. By decreasing 'gap' at each
+	 *  iteration, we move down the heap towards h[2]. The final step
+	 *  of making h[1] the maximum value is done in the next phase.
+	 */
+
+	for ( ; gap != size; gap -= size)
+	{
+		/*  fixheap(base0, size, cmp, gap, hi) */
+
+		for (p = base0 + (g = gap); (q = p + g) <= hi; p = q)
+		{
+			g += g;         /* double gap for next level */
+
+			/*
+			 *  Find greater of left and right children.
+			 */
+
+			if (q != hi && (*cmp)(q + size, q, data) > 0)
+			{
+				q += size;      /* choose right child */
+				g += size;      /* follow right subtree */
+			}
+
+			/*
+			 *  Compare with parent.
+			 */
+
+			if ((*cmp)(p, q, data) >= 0)
+				break;          /* order is correct */
+
+			swap(p, q, size);       /* swap parent and child */
+		}
+	}
+
+	/*
+	 *  Phase 2: Each iteration makes the first item in the
+	 *  array the maximum, then swaps it with the last item, which
+	 *  is its correct position. The size of the heap is decreased
+	 *  each iteration. The gap is always "size", as we are interested
+	 *  in the heap starting at h[1].
+	 */
+
+	for ( ; hi != base; hi -= size)
+	{
+		/* fixheap(base0, size, cmp, gap (== size), hi) */
+
+		p = (char *)base;               /* == base0 + size */
+		for (g = size; (q = p + g) <= hi; p = q)
+		{
+			g += g;
+			if (q != hi && (*cmp)(q + size, q, data) > 0)
+			{
+				q += size;
+				g += size;
+			}
+
+			if ((*cmp)(p, q, data) >= 0)
+				break;
+
+			swap(p, q, size);
+		}
+
+		swap((char *)base, hi, size);           /* move largest item to end */
+	}
 }
 
-static int errors = 0;
+#endif
+
+#ifdef TEST
+
+int errors = 0;
+char *string[4];
+char *data = "arbitrary";
+int testno = 0;
+
+static int cmp(const char **a, const char **b)
+{
+	return strcmp(*a, *b);
+}
+
+static int cmp_closure(const char **a, const char **b, const char *data)
+{
+	if (!data || strcmp(data, "arbitrary")) /* may crash here if buggy */
+		++errors, printf("Test%d: hsort_closure() failed: data not supplied\n", testno);
+
+	return strcmp(*a, *b);
+}
 
 static void verify(int test)
 {
@@ -251,7 +420,13 @@ static void verify(int test)
 
 int main(int ac, char **av)
 {
-	printf("Testing: hsort\n");
+	if (ac == 2 && !strcmp(av[1], "help"))
+	{
+		printf("usage: %s\n", *av);
+		return EXIT_SUCCESS;
+	}
+
+	printf("Testing: %s\n", "hsort");
 
 	string[0] = "abc";
 	string[1] = "def";
@@ -260,26 +435,50 @@ int main(int ac, char **av)
 	hsort(string, 4, sizeof string[0], (hsort_cmp_t *)cmp);
 	verify(1);
 
-	string[3] = "jkl";
-	string[2] = "ghi";
-	string[1] = "def";
-	string[0] = "abc";
+	string[0] = "jkl";
+	string[1] = "ghi";
+	string[2] = "def";
+	string[3] = "abc";
 	hsort(string, 4, sizeof string[0], (hsort_cmp_t *)cmp);
 	verify(2);
 
-	string[1] = "def";
-	string[0] = "abc";
-	string[3] = "jkl";
-	string[2] = "ghi";
+	string[0] = "def";
+	string[1] = "abc";
+	string[2] = "jkl";
+	string[3] = "ghi";
 	hsort(string, 4, sizeof string[0], (hsort_cmp_t *)cmp);
 	verify(3);
 
+	string[0] = "abc";
+	string[1] = "def";
+	string[2] = "ghi";
+	string[3] = "jkl";
+	testno = 5;
+	hsort_closure(string, 4, sizeof string[0], (hsort_closure_cmp_t *)cmp_closure, data);
+	verify(testno);
+
+	string[0] = "jkl";
+	string[1] = "ghi";
+	string[2] = "def";
+	string[3] = "abc";
+	testno = 6;
+	hsort_closure(string, 4, sizeof string[0], (hsort_closure_cmp_t *)cmp_closure, data);
+	verify(testno);
+
+	string[0] = "def";
+	string[1] = "abc";
+	string[2] = "jkl";
+	string[3] = "ghi";
+	testno = 7;
+	hsort_closure(string, 4, sizeof string[0], (hsort_closure_cmp_t *)cmp_closure, data);
+	verify(testno);
+
 	if (errors)
-		printf("%d/3 tests failed\n", errors);
+		printf("%d/6 tests failed\n", errors);
 	else
 		printf("All tests passed\n");
 
-	return 0;
+	return (errors == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 #endif

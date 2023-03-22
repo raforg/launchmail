@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,44 +14,24 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_HDR_H
 #define LIBSLACK_HDR_H
 
-#undef _slack_start_decls_
-#undef _slack_end_decls_
+#undef _begin_decls
+#undef _end_decls
 
 #ifdef __cplusplus
-#define _slack_start_decls_ extern "C" {
-#define _slack_end_decls_ }
+#define _begin_decls extern "C" {
+#define _end_decls }
 #else
-#define _slack_start_decls_
-#define _slack_end_decls_
+#define _begin_decls
+#define _end_decls
 #endif
-
-#undef _slack_proto_
-#undef const
-
-#if defined __STDC__ || defined __cplusplus
-#define _slack_proto_(args) args
-#else
-#define _slack_proto_(args) ()
-#define const
-#endif
-
-#undef __PROTO
-#undef __START_DECLS
-#undef __END_DECLS
-
-#define __PROTO       _slack_proto_
-#define __START_DECLS _slack_start_decls_
-#define __END_DECLS   _slack_end_decls_
 
 #endif
 

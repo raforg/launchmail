@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,26 +14,27 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 /*
 
 =head1 NAME
 
-I<libslack(sig)> - ANSI C compliant signal handling module
+I<libslack(sig)> - I<ISO C>-compliant signal handling module
 
 =head1 SYNOPSIS
 
+    #include <slack/std.h>
     #include <slack/sig.h>
 
-    typedef void sighandler_t(int signo);
+    typedef void signal_handler_t(int signo);
+    typedef void signal_siginfo_handler_t(int signo, siginfo_t *siginfo, void *context);
 
-    int signal_set_handler(int signo, int flags, sighandler_t *handler);
+    int signal_set_handler(int signo, int flags, signal_handler_t *handler);
+    int signal_set_siginfo_handler(int signo, int flags, signal_siginfo_handler_t *siginfo_handler);
     int signal_addset(int signo_handled, int signo_blocked);
     int signal_received(int signo);
     int signal_raise(int signo);
@@ -42,33 +43,56 @@ I<libslack(sig)> - ANSI C compliant signal handling module
 
 =head1 DESCRIPTION
 
-This module provides functions for ANSI C compliant signal handling. ANSI C
-compliant signal handlers may only set a single value of type
-C<sig_atomic_t>. This is a very restrictive requirement. This module allows
+This module provides functions for I<ISO C>-compliant signal handling. I<ISO
+C>-compliant signal handlers may only set a single value of type
+I<sig_atomic_t>. This is a very restrictive requirement. This module allows
 you to specify unrestricted signal handlers while (almost) transparently
-enforcing ANSI C compliance.
+enforcing I<ISO C> compliance.
 
-When a handled signal arrives, an ANSI C compliant signal handler is invoked
-to merely record the fact that the signal was received. Then, in the main
-thread of execution, when I<signal_handle()> or I<signal_handle_all()> is
-invoked, the client supplied signal handlers for all signals received since
-the last invocation of I<signal_handle()> or I<signal_handle_all()> are
-invoked.
+When a handled signal arrives, an I<ISO C>-compliant signal handler is
+invoked to merely record the fact that the signal was received. Then, in the
+main thread of execution, when I<signal_handle(3)> or
+I<signal_handle_all(3)> is invoked, the client supplied signal handlers for
+all signals received since the last invocation of I<signal_handle(3)> or
+I<signal_handle_all(3)> are invoked.
 
-Since the user supplied signal handlers execute in the main thread on
+Since the user-supplied signal handlers execute in the main thread on
 execution, they are not subject to the normal restrictions on signal
 handlers. Also, they will execute with the same signals blocked as the real
 signal handler.
+
+However, this indirection doesn't apply to the more dramatic signals (i.e.
+C<SIGILL>, C<SIGABRT>, C<SIGFPE>, C<SIGSEGV>, C<SIGBUS> and C<SIGSYS>) whose
+signal I<handler> functions are installed directly as the real signal
+handlers. Signal I<siginfo> handler functions installed with
+I<signal_set_siginfo_handler(3)> are installed directly as well. In general,
+these I<handler> and I<siginfo_handler> functions probably won't be I<ISO
+C>-compliant signal handler functions but as long as they are
+I<POSIX>-compliant signal handler functions (which is far less restrictive)
+it will be fine.
 
 =over 4
 
 =cut
 
+One of the nicest things about I<POSIX> MT programming is how it simplifies
+signal handling. A single thread can be devoted to handling signals
+synchronously with I<sigwait(3)> while all other threads go about their
+business, free from signals, and most importantly, free from the code
+clutter of checking every blocking system call to see if it was interrupted
+by a signal. To do this, block all signals in all threads except for the
+signal-handling thread. Then that thread will be the only one to receive
+signals, according to I<POSIX>.
+
+Unfortunately, if you have a I<Linux> system, you may notice that the MT
+signal handling is not I<POSIX>-compliant in this way. On the other hand,
+I<Linux> provides the I<signalfd(2)> system call which is even better. If
+you use that, you won't need this module at all.
+
 */
 
+#include "config.h"
 #include "std.h"
-
-#include <signal.h>
 
 #include "sig.h"
 #include "err.h"
@@ -83,27 +107,24 @@ signal handler.
 #endif
 #endif
 
-typedef struct signal_handler_t signal_handler_t;
+typedef struct real_signal_handler_t real_signal_handler_t;
 
-struct signal_handler_t
+struct real_signal_handler_t
 {
 	struct sigaction action[1];
-	sighandler_t *handler;
+	signal_handler_t *handler;
 };
 
-static struct
-{
-	signal_handler_t handler[SIG_MAX];
-}
-g;
+#ifndef TEST
 
+static real_signal_handler_t g_handler[SIG_MAX];
 static volatile sig_atomic_t g_received[SIG_MAX];
 
 /*
 
 C<void signal_catcher(int signo)>
 
-This is an ANSI C compliant signal handler function. It is used to catch all
+This is an I<ISO C>-compliant signal handler function. It is used to catch all
 signals. It records that the signal C<signo> was received.
 
 */
@@ -115,30 +136,32 @@ static void signal_catcher(int signo)
 
 /*
 
-=item C<int signal_set_handler(int signo, int flags, sighandler_t *handler)>
+=item C<int signal_set_handler(int signo, int flags, signal_handler_t *handler)>
 
-Installs C<handler> as the signal handler for the signal C<signo>. C<flags>
-is used as the I<sa_flags> field of the C<signal_handler_t> argument to
-I<sigaction(2)>. The actual function set as the signal handler is not
-C<handler>. It is an ANSI C compliant function that just records the fact
-that a signal was received. C<handler> will only be invoked when the client
-invokes I<signal_handle()> or I<signal_handle_all()> from the main thread of
-execution. So there are no restrictions on C<handler>. When C<handler> is
-invoked, the C<signo> signal will be blocked. Other signals can also be
-blocked when C<handler> is invoked using I<signal_addset()>. Several signals
-do not allow such treatment. Behaviour upon return from their handlers is
+Installs C<handler> as the signal handler function for the signal C<signo>.
+C<flags> is used as the I<sa_flags> field of the C<struct sigaction *act>
+argument to I<sigaction(2)>. The actual function that is set as the signal
+handler is not C<handler>. It is an I<ISO C>-compliant signal handler
+function that just records the fact that a signal was received. C<handler>
+will only be invoked when the client invokes I<signal_handle(3)> or
+I<signal_handle_all(3)> from the main thread of execution. So there are no
+restrictions on C<handler>. When C<handler> is invoked, the C<signo> signal
+will be blocked. Other signals can also be blocked when C<handler> is
+invoked using I<signal_addset(3)> or I<sigaddset(3)>. Several signals do not
+allow such treatment. Behaviour upon return from their handler function is
 undefined (or defined, but not very pleasant). They are C<SIGILL>,
-C<SIGABRT>, C<SIGFPE>, C<SIGBUS>, C<SIGSEGV> and C<SIGSYS>. Handlers
+C<SIGABRT>, C<SIGFPE>, C<SIGBUS>, C<SIGSEGV> and C<SIGSYS>. Handler function
 supplied for these signals are installed as the real signal handlers. On
-success, returns 0. On error, returns -1 with C<errno> set appropriately.
+success, returns C<0>. On error, returns C<-1> with C<errno> set
+appropriately.
 
 =cut
 
 */
 
-int signal_set_handler(int signo, int flags, sighandler_t *handler)
+int signal_set_handler(int signo, int flags, signal_handler_t *handler)
 {
-	signal_handler_t *h = &g.handler[signo];
+	real_signal_handler_t *h = &g_handler[signo];
 
 	sigemptyset(&h->action->sa_mask);
 	sigaddset(&h->action->sa_mask, signo);
@@ -176,13 +199,53 @@ int signal_set_handler(int signo, int flags, sighandler_t *handler)
 
 /*
 
+=item C<int signal_set_siginfo_handler(int signo, int flags, signal_siginfo_handler_t *siginfo_handler)>
+
+Installs C<siginfo_handler> as the signal I<siginfo> handler function for
+the signal C<signo>. A I<siginfo> handler takes three arguments (C<int
+signo>, C<siginfo_t *siginfo> and C<void *context>), rather than the usual
+single argument (C<int signo>). C<flags> is used as the I<sa_flags> field of
+the I<struct sigaction *act> argument to I<sigaction(2)> (combined with
+C<SA_SIGINFO>). Unlike usual signal C<handler> functions, signal
+I<siginfo_hndler> functions are installed directly. So there are
+I<POSIX>-imposed restrictions on C<siginfo_handler>. When C<siginfo_handler>
+is invoked, the C<signo> signal will be blocked. Other signals can also be
+blocked when C<siginfo_handler> is invoked using I<signal_addset(3)> or
+I<sigaddset(3)>. On success, returns C<0>. On error, returns C<-1> with
+C<errno> set appropriately.
+
+=cut
+
+*/
+
+int signal_set_siginfo_handler(int signo, int flags, signal_siginfo_handler_t *siginfo_handler)
+{
+#ifdef SA_SIGINFO
+	real_signal_handler_t *h = &g_handler[signo];
+
+	sigemptyset(&h->action->sa_mask);
+	sigaddset(&h->action->sa_mask, signo);
+	h->action->sa_flags = flags | SA_SIGINFO;
+	h->action->sa_sigaction = siginfo_handler;
+
+	h->handler = NULL;
+	g_received[signo] = 0;
+
+	return sigaction(signo, h->action, NULL);
+#else
+	return set_errno(ENOSYS);
+#endif
+}
+
+/*
+
 =item C<int signal_addset(int signo_handled, int signo_blocked)>
 
 Adds C<signo_blocked> to the set of signals that will be blocked when the
 handler for signal C<signo_handled> is invoked. This must not be called
-before the call to I<signal_set_handler()> for C<signo_handled> which
+before the call to I<signal_set_handler(3)> for C<signo_handled> which
 initialises the signal set to include C<signo_handled>. On success, returns
-0. On error, returns -1 with C<errno> set appropriately.
+C<0>. On error, returns C<-1> with C<errno> set appropriately.
 
 =cut
 
@@ -190,7 +253,7 @@ initialises the signal set to include C<signo_handled>. On success, returns
 
 int signal_addset(int signo_handled, int signo_blocked)
 {
-	signal_handler_t *h = &g.handler[signo_handled];
+	real_signal_handler_t *h = &g_handler[signo_handled];
 
 	return sigaddset(&h->action->sa_mask, signo_blocked);
 }
@@ -200,9 +263,9 @@ int signal_addset(int signo_handled, int signo_blocked)
 =item C<int signal_received(int signo)>
 
 Returns the number of times that the signal C<signo> has been received since
-the last call to I<signal_handle(signo)> or I<signal_handle_all()>. On error
-(i.e. C<signo> is out of range), returns -1 and sets C<errno> set to
-C<EINVAL>.
+the last call to I<signal_handle(3)> with C<signo> as its argument
+or I<signal_handle_all(3)>. On error (i.e. C<signo> is out of
+range), returns C<-1> and sets C<errno> set to C<EINVAL>.
 
 =cut
 
@@ -218,11 +281,11 @@ int signal_received(int signo)
 
 /*
 
-=item C<void signal_raise(int signo)>
+=item C<int signal_raise(int signo)>
 
 Simulates the receipt of the signal specified by C<signo>. On success,
 returns the number of unhandled C<signo> signals (including this one). On
-error (i.e. if C<signo> is out of range), returns -1 and sets C<errno> to
+error (i.e. if C<signo> is out of range), returns C<-1> and sets C<errno> to
 C<EINVAL>.
 
 =cut
@@ -242,9 +305,9 @@ int signal_raise(int signo)
 =item C<int signal_handle(int signo)>
 
 Executes the installed signal handler for the signal C<signo>. The C<signo>
-signal (and any others added with I<signal_addset()>) is blocked during the
+signal (and any others added with I<signal_addset(3)>) is blocked during the
 execution of the signal handler. Clears the received status of the C<signo>
-signal. On success, returns 0. On error, returns -1 with C<errno> set
+signal. On success, returns C<0>. On error, returns C<-1> with C<errno> set
 appropriately.
 
 =cut
@@ -253,14 +316,17 @@ appropriately.
 
 int signal_handle(int signo)
 {
-	signal_handler_t *h = &g.handler[signo];
+	real_signal_handler_t *h = &g_handler[signo];
 	sigset_t origmask[1];
+
+	if (!h->handler)
+		return set_errno(EINVAL);
 
 	if (sigprocmask(SIG_BLOCK, &h->action->sa_mask, origmask) == -1)
 		return -1;
 
+	h->handler(signo);
 	g_received[signo] = 0;
-	g.handler[signo].handler(signo);
 
 	return sigprocmask(SIG_SETMASK, origmask, NULL);
 }
@@ -270,8 +336,8 @@ int signal_handle(int signo)
 =item C<void signal_handle_all(void)>
 
 Executes the installed signal handlers for all signals that have been
-received since the last call to I<signal_handle()> or
-I<signal_handle_all()>. During the execution of each signal handler, the
+received since the last call to I<signal_handle(3)> or
+I<signal_handle_all(3)>. During the execution of each signal handler, the
 corresponding signal (and possibly others) will be blocked. Clears the
 received status of all signals handled.
 
@@ -292,98 +358,104 @@ void signal_handle_all(void)
 
 =back
 
+=head1 ERRORS
+
+=over 4
+
+=item C<EINVAL>
+
+When a signal number argument is out of range.
+
+=back
+
+=head1 MT-Level
+
+I<Unsafe>
+
 =head1 EXAMPLE
 
-    #include <unistd.h>
-    #include <signal.h>
-    #include <errno.h>
+    #include <slack/std.h>
     #include <slack/sig.h>
 
     void hup(int signo)  { printf("SIGHUP received\n"); }
-    void term(int signo) { printf("SIGTERM received\n"); exit(0); }
+    void term(int signo) { printf("SIGTERM received\n"); exit(EXIT_SUCCESS); }
 
     int main(int ac, char **av)
     {
         if (signal_set_handler(SIGHUP, 0, hup) == -1)
-            return 1;
+            return EXIT_FAILURE;
         if (signal_set_handler(SIGTERM, 0, term) == -1)
-            return 1;
+            return EXIT_FAILURE;
 
         for (;;)
         {
-            char msg[BUFSIZ];
+            char mesg[BUFSIZ];
             ssize_t n;
 
             signal_handle_all();
 
             // Signals arriving here are lost
 
-            while ((n = read(STDIN_FILENO, msg, BUFSIZ)) > 0)
-                fprintf(stderr, "%*.*s", n, n, msg);
+            while ((n = read(STDIN_FILENO, mesg, BUFSIZ)) > 0)
+                fprintf(stderr, "%*.*s", n, n, mesg);
 
             if (n == -1 && errno == EINTR)
                 continue;
 
-            exit(n != 0);
+            exit((n == -1) ? EXIT_FAILURE : EXIT_SUCCESS);
         }
 
-        return 0;
+        return EXIT_SUCCESS;
     }
 
 =head1 SEE ALSO
 
-L<daemon(3)|daemon(3)>,
-L<err(3)|err(3)>,
-L<fio(3)|fio(3)>,
-L<hsort(3)|hsort(3)>,
-L<lim(3)|lim(3)>,
-L<list(3)|list(3)>,
-L<log(3)|log(3)>,
-L<map(3)|map(3)>,
-L<mem(3)|mem(3)>,
-L<msg(3)|msg(3)>,
-L<net(3)|net(3)>,
-L<opt(3)|opt(3)>,
-L<prog(3)|prog(3)>,
-L<prop(3)|prop(3)>,
-L<str(3)|str(3)>
+I<libslack(3)>,
+I<prog(3)>
 
 =head1 AUTHOR
 
-20000902 raf <raf@raf.org>
+20230313 raf <raf@raf.org>
 
 =cut
 
 */
 
+#endif
+
 #ifdef TEST
 
-#include <signal.h>
 #include <fcntl.h>
-#include <wait.h>
 
+#include <sys/wait.h>
 #include <sys/stat.h>
 
-const char * const results[2] =
+const char * const results[3] =
 {
 	"Received SIGHUP\n",
 	"Received SIGTERM\n",
+	"Received SIGCHLD\n"
 };
 
 static void hup(int signo)
 {
-	printf(results[0]);
+	printf("%s", results[0]);
 }
 
 static void term(int signo)
 {
-	printf(results[1]);
-	exit(0);
+	printf("%s", results[1]);
+	exit(EXIT_SUCCESS);
+}
+
+static void chld_siginfo(int signo, siginfo_t *siginfo, void *context)
+{
+	printf("%s from pid %d", results[2], (int)siginfo->si_pid);
 }
 
 static void child(void)
 {
-	char msg[BUFSIZ];
+	char mesg[BUFSIZ];
 	ssize_t n;
 
 	/* We know signals have arrived so they will be handled immediately */
@@ -394,8 +466,8 @@ static void child(void)
 
 		/* Signals arriving here are lost */
 
-		while ((n = read(STDIN_FILENO, msg, BUFSIZ)) > 0)
-			fprintf(stderr, "%*.*s", n, n, msg);
+		while ((n = read(STDIN_FILENO, mesg, BUFSIZ)) > 0)
+			fprintf(stderr, "%*.*s", (int)n, (int)n, mesg);
 
 		switch (n)
 		{
@@ -404,7 +476,7 @@ static void child(void)
 				if (errno != EINTR)
 				{
 					fprintf(stderr, "read error\n");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 
 				signal_handle_all();
@@ -413,8 +485,8 @@ static void child(void)
 
 			default:
 			{
-				fprintf(stderr, "read = %d\n", n);
-				exit(1);
+				fprintf(stderr, "read = %d\n", (int)n);
+				exit(EXIT_FAILURE);
 			}
 		}
 	}
@@ -433,7 +505,7 @@ static int verify(int test, const char *name, const char *msg1, const char *msg2
 		return 1;
 	}
 
-	memset(buf, '\0', BUFSIZ);
+	memset(buf, 0, BUFSIZ);
 	bytes = read(fd, buf, BUFSIZ);
 	close(fd);
 	unlink(name);
@@ -448,7 +520,7 @@ static int verify(int test, const char *name, const char *msg1, const char *msg2
 
 	if (strncmp(buf, msg1, msg1_length))
 	{
-		printf("Test %d: msg file produced incorrect input:\nshould be\n%s\nwas:\n%*.*s\n", test, msg1, msg1_length, (int)msg1_length, buf);
+		printf("Test %d: msg file produced incorrect input:\nshould be\n%s\nwas:\n%*.*s\n", test, msg1, (int)msg1_length, (int)msg1_length, buf);
 		return 1;
 	}
 
@@ -469,7 +541,13 @@ int main(int ac, char **av)
 	pid_t pid;
 	int errors = 0;
 
-	printf("Testing: sig\n");
+	if (ac == 2 && !strcmp(av[1], "help"))
+	{
+		printf("usage: %s\n", *av);
+		return EXIT_SUCCESS;
+	}
+
+	printf("Testing: %s\n", "sig");
 
 	if (signal_set_handler(SIGHUP, 0, hup) == -1)
 		++errors, printf("Test1: failed to set the SIGHUP handler (%s)\n", strerror(errno));
@@ -480,13 +558,13 @@ int main(int ac, char **av)
 	if (pipe(sync1) == -1)
 	{
 		printf("Failed to perform test - pipe() failed (%s)\n", strerror(errno));
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	if (pipe(sync2) == -1)
 	{
 		printf("Failed to perform test - pipe() failed (%s)\n", strerror(errno));
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	if (errors == 0)
@@ -509,7 +587,7 @@ int main(int ac, char **av)
 				if (!freopen(out, "w", stdout))
 				{
 					fprintf(stderr, "Failed to perform test - freopen() stdout to %s failed (%s)\n", out, strerror(errno));
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 
 				/* Inform the parent that we're ready to receive signals */
@@ -566,7 +644,7 @@ int main(int ac, char **av)
 				if (WIFSIGNALED(status) && WTERMSIG(status) != SIGABRT)
 					fprintf(stderr, "Failed to evaluate test - child received signal %d\n", WTERMSIG(status));
 
-				if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+				if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 					fprintf(stderr, "Failed to evaluate test - child exit status %d\n", WEXITSTATUS(status));
 
 				/* Verify the output */
@@ -577,12 +655,15 @@ int main(int ac, char **av)
 		}
 	}
 
+	if (signal_set_siginfo_handler(SIGCHLD, 0, chld_siginfo) == -1)
+		++errors, printf("Test6: failed to set the SIGCHLD sigaction (%s)\n", strerror(errno));
+
 	if (errors)
-		printf("%d/5 test failed\n", errors);
+		printf("%d/6 tests failed\n", errors);
 	else
 		printf("All tests passed\n");
 
-	return 0;
+	return (errors == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 #endif

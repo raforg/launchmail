@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,34 +14,35 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_PROP_H
 #define LIBSLACK_PROP_H
 
 #include <slack/hdr.h>
+#include <slack/locker.h>
 
-__START_DECLS
-const char *prop_get __PROTO ((const char *name));
-const char *prop_get_or __PROTO ((const char *name, const char *default_value));
-const char *prop_set __PROTO ((const char *name, const char *value));
-int prop_get_int __PROTO ((const char *name));
-int prop_get_int_or __PROTO ((const char *name, int default_value));
-int prop_set_int __PROTO ((const char *name, int value));
-double prop_get_double __PROTO ((const char *name));
-double prop_get_double_or __PROTO ((const char *name, double default_value));
-double prop_set_double __PROTO ((const char *name, double value));
-int prop_get_bool __PROTO ((const char *name));
-int prop_get_bool_or __PROTO ((const char *name, int default_value));
-int prop_set_bool __PROTO ((const char *name, int value));
-int prop_unset __PROTO ((const char *name));
-int prop_save __PROTO ((void));
-__END_DECLS
+_begin_decls
+const char *prop_get(const char *name);
+const char *prop_get_or(const char *name, const char *default_value);
+const char *prop_set(const char *name, const char *value);
+int prop_get_int(const char *name);
+int prop_get_int_or(const char *name, int default_value);
+int prop_set_int(const char *name, int value);
+double prop_get_double(const char *name);
+double prop_get_double_or(const char *name, double default_value);
+double prop_set_double(const char *name, double value);
+int prop_get_bool(const char *name);
+int prop_get_bool_or(const char *name, int default_value);
+int prop_set_bool(const char *name, int value);
+int prop_unset(const char *name);
+int prop_save(void);
+int prop_clear(void);
+int prop_locker(Locker *locker);
+_end_decls
 
 #endif
 

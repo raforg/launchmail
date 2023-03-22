@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,11 +14,9 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_LIM_H
@@ -26,44 +24,44 @@
 
 #include <slack/hdr.h>
 
-__START_DECLS
-long limit_arg __PROTO ((void));
-long limit_child __PROTO ((void));
-long limit_tick __PROTO ((void));
-long limit_group __PROTO ((void));
-long limit_open __PROTO ((void));
-long limit_stream __PROTO ((void));
-long limit_tzname __PROTO ((void));
-long limit_job __PROTO ((void));
-long limit_save_ids __PROTO ((void));
-long limit_version __PROTO ((void));
-long limit_pcanon __PROTO ((const char *path));
-long limit_fcanon __PROTO ((int fd));
-long limit_canon __PROTO ((void));
-long limit_pinput __PROTO ((const char *path));
-long limit_finput __PROTO ((int fd));
-long limit_input __PROTO ((void));
-long limit_pvdisable __PROTO ((const char *path));
-long limit_fvdisable __PROTO ((int fd));
-long limit_vdisable __PROTO ((void));
-long limit_plink __PROTO ((const char *path));
-long limit_flink __PROTO ((int fd));
-long limit_link __PROTO ((void));
-long limit_pname __PROTO ((const char *path));
-long limit_fname __PROTO ((int fd));
-long limit_name __PROTO ((void));
-long limit_ppath __PROTO ((const char *path));
-long limit_fpath __PROTO ((int fd));
-long limit_path __PROTO ((void));
-long limit_ppipe __PROTO ((const char *path));
-long limit_fpipe __PROTO ((int fd));
-long limit_pnotrunc __PROTO ((const char *path));
-long limit_fnotrunc __PROTO ((int fd));
-long limit_notrunc __PROTO ((void));
-long limit_pchown __PROTO ((const char *path));
-long limit_fchown __PROTO ((int fd));
-long limit_chown __PROTO ((void));
-__END_DECLS
+_begin_decls
+long limit_arg(void);
+long limit_child(void);
+long limit_tick(void);
+long limit_group(void);
+long limit_open(void);
+long limit_stream(void);
+long limit_tzname(void);
+long limit_job(void);
+long limit_save_ids(void);
+long limit_version(void);
+long limit_pcanon(const char *path);
+long limit_fcanon(int fd);
+long limit_canon(void);
+long limit_pinput(const char *path);
+long limit_finput(int fd);
+long limit_input(void);
+long limit_pvdisable(const char *path);
+long limit_fvdisable(int fd);
+long limit_vdisable(void);
+long limit_plink(const char *path);
+long limit_flink(int fd);
+long limit_link(void);
+long limit_pname(const char *path);
+long limit_fname(int fd);
+long limit_name(void);
+long limit_ppath(const char *path);
+long limit_fpath(int fd);
+long limit_path(void);
+long limit_ppipe(const char *path);
+long limit_fpipe(int fd);
+long limit_pnotrunc(const char *path);
+long limit_fnotrunc(int fd);
+long limit_notrunc(void);
+long limit_pchown(const char *path);
+long limit_fchown(int fd);
+long limit_chown(void);
+_end_decls
 
 #endif
 

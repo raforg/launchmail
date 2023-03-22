@@ -170,7 +170,7 @@ option character.)  Otherwise, I<getopt_long()> returns 0, and
 C<flag> points to a variable which is set to C<val> if the
 option is found, but left unchanged if the option is not found.
 
-=item I<val>
+=item C<val>
 
 is the value to return, or to load into the variable pointed
 to by C<flag>.
@@ -182,7 +182,7 @@ The last element of the array has to be filled with zeroes.
 If C<longindex> is not C<NULL>, it points to a variable which is
 set to the index of the long option relative to C<longopts>.
 
-I<getopt_long_only()> is like C<getopt_long()>, but `-' as well
+I<getopt_long_only()> is like I<getopt_long()>, but `-' as well
 as `--' can indicate a long option.  If an option that starts with `-'
 (not `--') doesn't match a long option, but does match a short option,
 it is parsed as a short option instead.
@@ -220,10 +220,15 @@ but the support remains in GNU libc.
 =head1 EXAMPLE
 
 The following example program, from the source code, illustrates the
-use of I<getopt_long()> with most of its features.
+use of I<getopt_long(3)> with most of its features.
 
     #include <stdio.h>
-    
+    #ifndef HAVE_GETOPT_LONG
+    #include <slack/getopt.h>
+    #else
+    #include <getopt.h>
+    #endif
+
     int
     main (argc, argv)
          int argc;
@@ -231,7 +236,7 @@ use of I<getopt_long()> with most of its features.
     {
       int c;
       int digit_optind = 0;
-    
+
       while (1)
         {
           int this_option_optind = optind ? optind : 1;
@@ -246,62 +251,62 @@ use of I<getopt_long()> with most of its features.
             {"file", 1, 0, 0},
             {0, 0, 0, 0}
           };
-    
+
           c = getopt_long (argc, argv, "abc:d:012",
     		       long_options, &option_index);
           if (c == -1)
     	break;
-    
+
           switch (c)
             {
             case 0:
               printf ("option %s", long_options[option_index].name);
               if (optarg)
                 printf (" with arg %s", optarg);
-              printf ("\\n");
+              printf ("\n");
               break;
-    
+
             case '0':
             case '1':
             case '2':
               if (digit_optind != 0 && digit_optind != this_option_optind)
-                printf ("digits occur in two different argv-elements.\\n");
+                printf ("digits occur in two different argv-elements.\n");
               digit_optind = this_option_optind;
-              printf ("option %c\\n", c);
+              printf ("option %c\n", c);
               break;
-    
+
             case 'a':
-              printf ("option a\\n");
+              printf ("option a\n");
               break;
-    
+
             case 'b':
-              printf ("option b\\n");
+              printf ("option b\n");
               break;
-    
+
             case 'c':
-              printf ("option c with value `%s'\\n", optarg);
+              printf ("option c with value `%s'\n", optarg);
               break;
-    
+
             case 'd':
-              printf ("option d with value `%s'\\n", optarg);
+              printf ("option d with value `%s'\n", optarg);
               break;
-    
+
             case '?':
               break;
-    
+
             default:
-              printf ("?? getopt returned character code 0%o ??\\n", c);
+              printf ("?? getopt returned character code 0%o ??\n", c);
             }
         }
-    
+
       if (optind < argc)
         {
           printf ("non-option ARGV-elements: ");
           while (optind < argc)
           printf ("%s ", argv[optind++]);
-          printf ("\\n");
+          printf ("\n");
         }
-    
+
       exit (0);
     }
 
@@ -323,7 +328,7 @@ fied.
 
 POSIX.2, provided the environment variable POSIXLY_CORRECT is set.
 Otherwise, the elements of C<argv> aren't really const, because we
-permute them. We pretend they`re const in the prototype to be
+permute them. We pretend they're const in the prototype to be
 compatible with other systems.
 
 =back
@@ -334,12 +339,13 @@ compatible with other systems.
 
 #include "getopt.h"
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 
 #if 0
 #include <stdio-common/_itoa.h>
 #endif
+
+pid_t getpid();
 
 /* Variable to synchronize work.  */
 char *__getopt_nonoption_flags;
@@ -446,7 +452,7 @@ __getopt_clean_environment (char **env)
    License along with the GNU C Library; see the file COPYING.LIB.  If not,
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
-
+
 /* This tells Alpha OSF/1 not to define a getopt prototype in <stdio.h>.
    Ditto for AIX 3.2 and <stdlib.h>.  */
 #ifndef _NO_PROTO
@@ -484,7 +490,6 @@ __getopt_clean_environment (char **env)
 #endif
 
 #ifndef ELIDE_CODE
-
 
 /* This needs to come after some library #include
    to get __GNU_LIBRARY__ defined.  */
@@ -562,7 +567,7 @@ int __getopt_initialized;
    in which the last option character we returned was found.
    This allows us to pick up the scan where we left off.
 
-   If this is zero, or a null string, it means resume the scan
+   If this is zero, or a NULL string, it means resume the scan
    by advancing to the next ARGV-element.  */
 
 static char *nextchar;
@@ -614,7 +619,7 @@ static enum
 
 /* Value of POSIXLY_CORRECT environment variable.  */
 static char *posixly_correct;
-
+
 #ifdef	__GNU_LIBRARY__
 /* We want to avoid inclusion of string.h with non-GNU libraries
    because there are many ways it can cause trouble.
@@ -664,7 +669,7 @@ extern int strlen (const char *);
 #endif /* __GNUC__ */
 
 #endif /* not __GNU_LIBRARY__ */
-
+
 /* Handle permutation of arguments.  */
 
 /* Describe the part of ARGV that contains non-options that have
@@ -877,7 +882,7 @@ _getopt_initialize (argc, argv, optstring)
 
   return optstring;
 }
-
+
 /* Scan elements of ARGV (whose length is ARGC) for option characters
    given in OPTSTRING.
 
@@ -995,7 +1000,7 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 	}
 
       /* The special ARGV-element `--' means premature end of options.
-	 Skip it like a null option,
+	 Skip it like a NULL option,
 	 then exchange with previous non-options as if it were an option,
 	 then skip everything else like a non-option.  */
 
@@ -1403,7 +1408,6 @@ getopt (argc, argv, optstring)
 }
 
 #endif	/* Not ELIDE_CODE.  */
-
 
 /* getopt_long and getopt_long_only entry points for GNU getopt.
    Copyright (C) 1987,88,89,90,91,92,93,94,96,97,98
@@ -1424,7 +1428,7 @@ getopt (argc, argv, optstring)
    License along with the GNU C Library; see the file COPYING.LIB.  If not,
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
-
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -1458,7 +1462,6 @@ getopt (argc, argv, optstring)
 #endif
 
 #ifndef ELIDE_CODE
-
 
 /* This needs to come after some library #include
    to get __GNU_LIBRARY__ defined.  */
@@ -1497,11 +1500,11 @@ getopt_long_only (argc, argv, options, long_options, opt_index)
   return _getopt_internal (argc, argv, options, long_options, opt_index, 1);
 }
 
-
 #endif	/* Not ELIDE_CODE.  */
-
+
 #ifdef TEST
 
+#include <stdlib.h>
 #include <stdio.h>
 
 int

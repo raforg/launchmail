@@ -1,7 +1,7 @@
 /*
 * libslack - http://libslack.org/
 *
-* Copyright (C) 1999, 2000 raf <raf@raf.org>
+* Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,11 +14,9 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20000902 raf <raf@raf.org>
+* 20230313 raf <raf@raf.org>
 */
 
 #ifndef LIBSLACK_DAEMON_H
@@ -26,35 +24,59 @@
 
 #include <slack/hdr.h>
 
-#ifndef PID_DIR
-#define PID_DIR "/var/run"
+/* Define the standard pidfile directory for the root user */
+#ifndef ROOT_PID_DIR
+#define ROOT_PID_DIR "/var/run"
 #endif
 
+/* Define the standard pidfile directory for normal users */
+#ifndef USER_PID_DIR
+#define USER_PID_DIR "/tmp"
+#endif
+
+/* Define the root directory */
 #ifndef ROOT_DIR
 #define ROOT_DIR "/"
 #endif
 
+/* Define the /etc directory */
 #ifndef ETC_DIR
 #define ETC_DIR "/etc"
 #endif
 
+/* Define the path directory separator as a character */
 #ifndef PATH_SEP
 #define PATH_SEP '/'
 #endif
 
+/* Define the path directory separator as a string */
+#ifndef PATH_SEP_STR
+#define PATH_SEP_STR "/"
+#endif
+
+/* Define the $PATH environment variable directory separator */
+#ifndef PATH_LIST_SEP
+#define PATH_LIST_SEP ':'
+#endif
+
 typedef void daemon_config_parser_t(void *obj, const char *path, char *line, size_t lineno);
 
-__START_DECLS
-int daemon_started_by_init __PROTO ((void));
-int daemon_started_by_inetd __PROTO ((void));
-int daemon_prevent_core __PROTO ((void));
-int daemon_revoke_privileges __PROTO ((void));
-char *daemon_absolute_path __PROTO ((const char *path));
-int daemon_path_is_safe __PROTO ((const char *path));
-void *daemon_parse_config __PROTO ((const char *path, void *obj, daemon_config_parser_t *parser));
-int daemon_init __PROTO ((const char *name));
-int daemon_close __PROTO ((void));
-__END_DECLS
+_begin_decls
+int daemon_started_by_init(void);
+int daemon_started_by_inetd(void);
+int daemon_prevent_core(void);
+int daemon_revoke_privileges(void);
+int daemon_become_user(uid_t uid, gid_t gid, char *user);
+char *daemon_absolute_path(const char *path);
+int daemon_path_is_safe(const char *path, char *explanation, size_t explanation_size);
+void *daemon_parse_config(const char *path, void *obj, daemon_config_parser_t *parser);
+int daemon_pidfile(const char *name);
+int daemon_init(const char *name);
+int daemon_close(void);
+pid_t daemon_getpid(const char *name);
+int daemon_is_running(const char *name);
+int daemon_stop(const char *name);
+_end_decls
 
 #endif
 
