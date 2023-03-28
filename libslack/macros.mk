@@ -1,5 +1,5 @@
 #
-# libslack - http://libslack.org/
+# libslack - https://libslack.org
 #
 # Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 #
@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
-# 20230313 raf <raf@raf.org>
+# 20230330 raf <raf@raf.org>
+#
 
 # Uncomment these to override the defines in daemon.h and prog.h
 #
@@ -139,9 +140,9 @@ SLACK_TEST_CCFLAGS += -Wno-restrict
 # SLACK_DEFINES += -DNO_DEBUG_LOCKERS=1
 
 SLACK_NAME := slack
-SLACK_VERSION := 0.7.2
-SLACK_DATE := 20230313
-SLACK_URL := http://libslack.org/
+SLACK_VERSION := 0.7.3
+SLACK_DATE := 20230330
+SLACK_URL := https://libslack.org
 SLACK_ID := lib$(SLACK_NAME)-$(SLACK_VERSION)
 SLACK_DIST := $(SLACK_ID).tar.gz
 SLACK_HTML_ID := $(SLACK_ID)-html
@@ -198,13 +199,13 @@ endif
 ALL_TARGETS += slack
 READY_TARGETS += ready-slack
 TEST_TARGETS += test-slack
+ifeq ($(SLACK_MAIN), 1)
 MAN_TARGETS += man-slack
 HTML_TARGETS += html-slack
-ifeq ($(SLACK_MAIN), 1)
 INSTALL_TARGETS += install-slack
 UNINSTALL_TARGETS += uninstall-slack
-endif
 DIST_TARGETS += dist-slack
+endif
 RPM_TARGETS += rpm-slack
 DEB_TARGETS +=
 SOL_TARGETS += sol-slack

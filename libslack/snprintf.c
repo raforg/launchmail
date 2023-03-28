@@ -1,5 +1,5 @@
 /*
-* libslack - http://libslack.org/
+* libslack - https://libslack.org
 *
 * Copyright (C) 1999-2002, 2004, 2010, 2020-2023 raf <raf@raf.org>
 *
@@ -16,7 +16,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20230313 raf <raf@raf.org>
+* 20230330 raf <raf@raf.org>
 */
 
 /*
