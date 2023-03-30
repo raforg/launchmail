@@ -1,5 +1,5 @@
 /*
-* launchmail - http://libslack.org/launchmail/
+* launchmail - https://libslack.org/launchmail
 *
 * Copyright (C) 2000 raf <raf@raf.org>
 *
@@ -14,9 +14,7 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-* or visit http://www.gnu.org/copyleft/gpl.html
+* along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
 * 20001127 raf <raf@raf.org>
 */
@@ -25,7 +23,7 @@
 
 =head1 NAME
 
-I<launchmail> - an SMTP client with a sendmail compatible wrapper
+I<launchmail> - an SMTP client with a I<sendmail>-compatible wrapper
 
 =head1 SYNOPSIS
 
@@ -270,7 +268,22 @@ L<mpack(1)|mpack(1)>
 
 */
 
-#define _BSD_SOURCE
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE /* For SIGWINCH and CEOF on OpenBSD-4.7 */
+#endif
+
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE /* New name for _BSD_SOURCE */
+#endif
+
+#ifndef __BSD_VISIBLE
+#define __BSD_VISIBLE 1 /* For SIGWINCH on FreeBSD-8.0 */
+#endif
+
+#ifndef _NETBSD_SOURCE
+#define _NETBSD_SOURCE /* For CEOF, chroot() on NetBSD-5.0.2 */
+#endif
+
 #include <slack/std.h>
 #include <slack/lib.h>
 #include <sys/utsname.h>
@@ -292,7 +305,7 @@ static struct
 	const char *hostname;
 	const char *server;
 	int port;
-	int timeout;
+	long timeout;
 	int quiet;
 	int noheaders;
 	int readto;
@@ -302,16 +315,16 @@ static struct
 }
 g =
 {
-	NULL, /* message */
-	NULL, /* from */
-	NULL, /* subject */
-	NULL, /* to */
-	NULL, /* cc */
-	NULL, /* bcc */
-	NULL, /* headers */
-	NULL, /* mailfrom */
-	NULL, /* hostname */
-	NULL, /* server */
+	null, /* message */
+	null, /* from */
+	null, /* subject */
+	null, /* to */
+	null, /* cc */
+	null, /* bcc */
+	null, /* headers */
+	null, /* mailfrom */
+	null, /* hostname */
+	null, /* server */
 	0,    /* port */
 	10,   /* timeout */
 	0,    /* quiet */
@@ -392,7 +405,7 @@ int body(int smtp, FILE *input)
 		if (newline)
 			strcpy(buf + len - 1, "\r\n"), ++len;
 
-		if (net_write(smtp, buf, len) == -1)
+		if (net_write(smtp, g.timeout, buf, len) == -1)
 			return errorsys("An error occurred while sending the message");
 	}
 
@@ -452,9 +465,9 @@ const char *endof(const char *s, int type)
 int readto(FILE *input, String **hdrs)
 {
 	char buf[BUFSIZ], rcpt[BUFSIZ];
-	List **target = NULL;
-	const char *start, *end, *t, *b = NULL;
-	char *s = NULL;
+	List **target = null;
+	const char *start, *end, *t, *b = null;
+	char *s = null;
 
 	if (!(*hdrs = str_create("")))
 		fatal("out of memory");
@@ -493,14 +506,14 @@ int readto(FILE *input, String **hdrs)
 			if (target) /* Previous header was interesting */
 			{
 				String *addr;
-				if (!*target && !(*target = list_create((list_destroy_t *)str_release)))
+				if (!*target && !(*target = list_create((list_release_t *)str_release)))
 					fatal("out of memory");
 				*s = '\0';
 				if (!(addr = str_create("%s", rcpt)))
 					fatal("out of memory");
 				if (!list_append(*target, str_squeeze(str_trim(addr))))
 					fatal("out of memory");
-				s = NULL;
+				s = null;
 
 				if (target == &g.bcc && !g.sendbcc) /* Previous header was secret */
 				{
@@ -510,7 +523,7 @@ int readto(FILE *input, String **hdrs)
 					t = b;
 				}
 
-				target = NULL;
+				target = null;
 			}
 
 			if (!strncasecmp("To:", t, 3))
@@ -553,7 +566,7 @@ int readto(FILE *input, String **hdrs)
 			{
 				String *addr;
 				*s = '\0';
-				if (!*target && !(*target = list_create((list_destroy_t *)str_release)))
+				if (!*target && !(*target = list_create((list_release_t *)str_release)))
 					fatal("out of memory");
 				if (!(addr = str_create("%s", rcpt)))
 					fatal("out of memory");
@@ -571,31 +584,29 @@ int readto(FILE *input, String **hdrs)
 	return 0;
 }
 
+char *rfc822(char *buf, size_t max, struct tm *tm)
+{
+	size_t size = strftime(buf, max, "%a, %d %b %Y %H:%M:%S %z", tm);
+
+	if (size == 0)
+		return null;
+
+	return buf;
+}
+
 char *rfc822_localtime(char *buf, size_t max, time_t time)
 {
-	static const char sign[2] = { '+', '-' };
-	struct tm tm = *localtime(&time); /* XXX Is this safe? */
-	size_t size = strftime(buf, max, "%a, %d %b %Y %H:%M:%S ", &tm);
-	if (size == 0)
-		return NULL;
-	size = snprintf(buf + size, max - size, "%c%04d", sign[timezone > 0], abs(timezone) / 36);
-	if (size <= 0 || size >= max)
-		return NULL;
-	return buf;
+	return rfc822(buf, max, localtime(&time));
 }
 
 char *rfc822_gmtime(char *buf, size_t max, time_t time)
 {
-	struct tm tm = *gmtime(&time); /* XXX Is this safe? */
-	size_t size = strftime(buf, max, "%a, %d %b %Y %H:%M:%S GMT", &tm);
-	if (size == 0)
-		return NULL;
-	return buf;
+	return rfc822(buf, max, gmtime(&time));
 }
 
 String *addressof(const char *addr)
 {
-	const char *a, *l = NULL, *r = NULL;
+	const char *a, *l = null, *r = null;
 
 	for (a = addr; *a; ++a)
 	{
@@ -610,7 +621,7 @@ String *addressof(const char *addr)
 	}
 
 	if (l && r)
-		return (l > r) ? NULL : substr(l, 0, r + 1 - l);
+		return (l > r) ? null : substr(l, 0, r + 1 - l);
 
 	return str_create("<%s>", addr);
 }
@@ -626,7 +637,7 @@ int rcpt(int smtp, List *recipients)
 		try_str(addr = addressof(cstr(recipient)))
 		debug((1, "Sending: RCPT TO: %s", cstr(addr)))
 		try_send((smtp, g.timeout, "RCPT TO: %s\r\n", cstr(addr)))
-		str_destroy(addr);
+		str_destroy(&addr);
 		debug((2, "Expecting server response"))
 		try_expect((smtp, g.timeout, "%d", &code), 1, 250)
 	}
@@ -638,7 +649,7 @@ int launch(FILE *input)
 {
 	int smtp;
 	int code;
-	String *hdrs = NULL, *addr;
+	String *hdrs = null, *addr;
 	int rc;
 	char c;
 
@@ -653,7 +664,7 @@ int launch(FILE *input)
 	}
 
 	debug((1, "Connecting to %s:%d", g.server, g.port))
-	smtp = net_client(g.server, NULL, g.port, NULL, NULL);
+	smtp = net_client(g.server, null, g.port, g.timeout, 0, 0, null, null);
 	if (smtp == -1)
 		return -1;
 
@@ -669,7 +680,7 @@ int launch(FILE *input)
 	try_str(addr = addressof(g.mailfrom))
 	debug((1, "Sending: MAIL FROM: %s", cstr(addr)))
 	try_send((smtp, g.timeout, "MAIL FROM: %s\r\n", cstr(addr)))
-	str_destroy(addr);
+	str_destroy(&addr);
 	debug((2, "Expecting server response"))
 	try_expect((smtp, g.timeout, "%d", &code), 1, 250)
 	try(rcpt(smtp, g.to))
@@ -687,9 +698,9 @@ int launch(FILE *input)
 		if (g.gmtime || g.localtime)
 		{
 			if (g.gmtime)
-				rfc822_gmtime(buf, BUFSIZ, time(NULL));
+				rfc822_gmtime(buf, BUFSIZ, time(null));
 			else
-				rfc822_localtime(buf, BUFSIZ, time(NULL));
+				rfc822_localtime(buf, BUFSIZ, time(null));
 
 			debug((1, "Sending: Date: %s", buf))
 			try_send((smtp, g.timeout, "Date: %s\r\n", buf))
@@ -717,7 +728,7 @@ int launch(FILE *input)
 	{
 		debug((1, "Sending headers in message"))
 		try_send((smtp, g.timeout, "%s", cstr(hdrs)))
-		str_destroy(hdrs);
+		str_destroy(&hdrs);
 	}
 
 	debug((1, "Sending message body"))
@@ -763,7 +774,7 @@ void append(List *list, const char *text, const char *delim)
 {
 	if (delim)
 	{
-		List *add = regex_split(text, delim);
+		List *add = regexpr_split(text, delim, 0, 0);
 		if (!add)
 			fatalsys("out of memory");
 		if (!list_append_list(list, add, null_copy))
@@ -783,13 +794,13 @@ void append(List *list, const char *text, const char *delim)
 
 void add(List **target, const char *arg, const char *delim)
 {
-	if (!*target && !(*target = list_create((list_destroy_t *)str_release)))
+	if (!*target && !(*target = list_create((list_release_t *)str_release)))
 		fatal("out of memory");
 
 	append(*target, arg, delim);
 }
 
-const char *gdelim = NULL;
+const char *gdelim = null;
 
 void parse(void *obj, const char *path, char *line, size_t lineno)
 {
@@ -798,13 +809,16 @@ void parse(void *obj, const char *path, char *line, size_t lineno)
 
 void addfile(List **target, const char *arg, const char *delim)
 {
-	if (!*target && !(*target = list_create((list_destroy_t *)str_release)))
+	char explanation[1024];
+	size_t explanation_size = 1024;
+
+	if (!*target && !(*target = list_create((list_release_t *)str_release)))
 		fatal("out of memory");
 
-	switch (daemon_path_is_safe(arg))
+	switch (daemon_path_is_safe(arg, explanation, explanation_size))
 	{
 		case -1:
-			errorsys("Failed to check file: %s", arg);
+			errorsys("Failed to check file: %s (%s)", arg, explanation);
 			return;
 		case 0:
 			error("Ignoring unsafe file: %s", arg);
@@ -851,12 +865,12 @@ void addfile_bcc(const char *arg)
 
 void add_headers(const char *arg)
 {
-	add(&g.headers, arg, NULL);
+	add(&g.headers, arg, null);
 }
 
 void addfile_headers(const char *arg)
 {
-	addfile(&g.headers, arg, NULL);
+	addfile(&g.headers, arg, null);
 }
 
 void check_config()
@@ -908,105 +922,106 @@ void check_config()
 
 /*
 
-C<Option daemon_optab[];>
+C<Option launchmail_options_table[];>
 
 Application specific command line options.
 
 */
 
-static Option daemon_optab[] =
+static Option launchmail_options_table[] =
 {
 	{
 		"from", 'f', "address", "Sender address",
-		required_argument, OPT_STRING, OPT_VARIABLE, &g.from
+		required_argument, OPT_STRING, OPT_VARIABLE, &g.from, null
 	},
 	{
 		"subject", 's', "subject", "Message subject",
-		required_argument, OPT_STRING, OPT_VARIABLE, &g.subject
+		required_argument, OPT_STRING, OPT_VARIABLE, &g.subject, null
 	},
 	{
 		"to", 't', "addresses", "Recipient address list (comma separated)",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)add_to
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)add_to
 	},
 	{
 		"tofile", 'T', "filename", "Recipient address list filename",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)addfile_to
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)addfile_to
 	},
 	{
 		"cc", 'c', "addresses", "Carbon Copy address list",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)add_cc
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)add_cc
 	},
 	{
 		"ccfile", 'C', "filename", "Carbon Copy address list filename",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)addfile_cc
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)addfile_cc
 	},
 	{
 		"bcc", 'b', "addresses", "Blind Carbon Copy address list",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)add_bcc
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)add_bcc
 	},
 	{
 		"bccfile", 'B', "filename", "Blind Carbon Copy address list filename",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)addfile_bcc
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)addfile_bcc
 	},
 	{
-		"readto", 'r', NULL, "Read message for recipients",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.readto
+		"readto", 'r', null, "Read message for recipients",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.readto, null
 	},
 	{
-		"sendbcc", '!', NULL, "Don't remove Bcc header (when --readto)",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.sendbcc
+		"sendbcc", '!', null, "Don't remove Bcc header (when --readto)",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.sendbcc, null
 	},
 	{
-		"gmtime", 'g', NULL, "Add Date: header in gmtime",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.gmtime
+		"gmtime", 'g', null, "Add Date: header in gmtime",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.gmtime, null
 	},
 	{
-		"localtime", 'l', NULL, "Add Date: header in localtime",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.localtime
+		"localtime", 'l', null, "Add Date: header in localtime",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.localtime, null
 	},
 	{
 		"header", 'x', "'name: value'", "Arbitrary header",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)add_headers
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)add_headers
 	},
 	{
 		"headerfile", 'X', "filename", "Arbitrary header filename",
-		required_argument, OPT_STRING, OPT_FUNCTION, (void *)addfile_headers
+		required_argument, OPT_STRING, OPT_FUNCTION, null, (func_t *)addfile_headers
 	},
 	{
 		"mailfrom", 'm', "address", "SMTP mail from address",
-		required_argument, OPT_STRING, OPT_VARIABLE, &g.mailfrom
+		required_argument, OPT_STRING, OPT_VARIABLE, &g.mailfrom, null
 	},
 	{
 		"hostname", 'n', "hostname", "SMTP helo hostname",
-		required_argument, OPT_STRING, OPT_VARIABLE, &g.hostname
+		required_argument, OPT_STRING, OPT_VARIABLE, &g.hostname, null
 	},
 	{
 		"server", 'S', "hostname", "SMTP server to connect to",
-		required_argument, OPT_STRING, OPT_VARIABLE, &g.server
+		required_argument, OPT_STRING, OPT_VARIABLE, &g.server, null
 	},
 	{
 		"port", 'P', "#", "Port to use when connecting to SMTP server",
-		required_argument, OPT_INTEGER, OPT_VARIABLE, &g.port
+		required_argument, OPT_INTEGER, OPT_VARIABLE, &g.port, null
 	},
 	{
 		"timeout", 'o', "#", "Seconds to wait during SMTP dialogue",
-		required_argument, OPT_INTEGER, OPT_VARIABLE, &g.timeout
+		required_argument, OPT_INTEGER, OPT_VARIABLE, &g.timeout, null
 	},
 	{
-		"noheaders", 'N', NULL, "Do not insert any headers",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.noheaders
+		"noheaders", 'N', null, "Do not insert any headers",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.noheaders, null
 	},
 	{
-		"quiet", 'q', NULL, "Remain silent when an error occurs",
-		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.quiet
+		"quiet", 'q', null, "Remain silent when an error occurs",
+		no_argument, OPT_INTEGER, OPT_VARIABLE, &g.quiet, null
 	},
 	{
-		NULL, '\0', NULL, NULL, 0, 0, 0, NULL
+		null, '\0', null, null, 0, 0, 0, null, null
 	}
 };
 
-static Options options[1] = {{ prog_options_table, daemon_optab }};
+static Options options[1] = {{ prog_options_table, launchmail_options_table }};
 
+#ifndef NDEBUG
 void show_config()
 {
 	debug((1, "Message: %s", g.message))
@@ -1049,6 +1064,7 @@ void show_config()
 	debug((1, "NoHeaders: %d", g.noheaders))
 	debug((1, "Quiet: %d", g.quiet))
 }
+#endif
 
 int main(int ac, char **av)
 {
@@ -1062,32 +1078,32 @@ int main(int ac, char **av)
 	prog_set_options(options);
 	prog_set_author("raf <raf@raf.org>");
 	prog_set_contact(prog_author());
-	prog_set_url("http://libslack.org/launchmail/");
+	prog_set_url(LAUNCH_URL);
 	prog_set_legal
 	(
 		"Copyright (C) 2000 raf <raf@raf.org>\n"
 		"\n"
-		"This is free software released under the terms of the GPL:\n"
+		"This is free software released under the terms of the GPLv2+:\n"
 		"\n"
 		"    http://www.gnu.org/copyleft/gpl.html\n"
 		"\n"
 		"There is no warranty; not even for merchantability or fitness\n"
 		"for a particular purpose.\n"
-#ifdef NEEDS_GETOPT
+#ifndef HAVE_GETOPT_LONG
 		"\n"
 		"Includes the GNU getopt functions:\n"
 		"    Copyright (C) 1997, 1998 Free Software Foundation, Inc.\n"
 #endif
-#ifdef NEEDS_SNPRINTF
+#ifndef HAVE_SNPRINTF
 		"\n"
 		"Includes snprintf:\n"
-		"    Copyright (C) 1997 Theo de Raadt\n"
+		"    Copyright (C) 1995 Patrick Powell\n"
 #endif
 	);
 
 	prog_set_desc
 	(
-		"launchmail - an SMTP client with a sendmail compatible wrapper.\n"
+		"launchmail - an SMTP client with a sendmail-compatible wrapper.\n"
 		"See the launchmail(1) manpage for more information.\n"
 	);
 
@@ -1107,8 +1123,10 @@ int main(int ac, char **av)
 	if (g.quiet)
 		prog_err_none();
 
+#ifndef NDEBUG
 	if (prog_debug_level() >= 1)
 		show_config();
+#endif
 
 	if (launchmail() == -1)
 		fatal("failed to launch mail");

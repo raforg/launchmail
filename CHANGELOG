@@ -5,14 +5,13 @@ CHANGELOG
 
     - Upgrade internal libslack from 0.3 to 0.7.3
     - Remove MANIFEST
-
+    - Add CODE_OF_CONDUCT.md
+    - Add LICENSE
+    - Add LICENSES/* and .reuse/dep5 (REUSE 3.0 compliant)
+    - Split README into README.md, COPYING, and CHANGELOG
     - Add/Update conf scripts for many more operating systems
     - Add ./configure script (not autoconf)
     - Update to compile cleanly again
-    - Add CODE_OF_CONDUCT.md
-    - Add LICENSES/* and .reuse/dep5 (REUSE 3.0 compliant)
-    - Add LICENSE
-    - Split README into README.md, COPYING, and CHANGELOG
 
 0.1 (20001127)
 
