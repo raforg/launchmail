@@ -20,7 +20,7 @@
 # XXXXXXXX raf <raf@raf.org>
 #
 
-# Modify Makefile, macros.mk and config.h to compile on Linux
+# Modify the macros.mk make include files to exercise optional code
 
 perl -pi \
 	-e 's/^(\S+ \+= xnet)$/# $1/;' \
@@ -63,7 +63,6 @@ perl -pi \
 	-e 's/^CONF_INSDIR := \$\(PREFIX\)\/etc$/CONF_INSDIR := \/etc/;' \
 	-e 's/^# (PREFIX := \/usr\/local)$/$1/;' \
 	-e 's/^(PREFIX := \/usr\/pkg)$/# $1/;' \
-	-e 's/^(PREFIX := ).*$/$1\/usr\/local/;' \
 	-e 's/^(DAEMON_DEFINES \+= -DCONFIG_PATH=\\"\$\(PREFIX\)\/etc\/daemon\.conf\\")$/# $1/;' \
 	`find . -name Makefile` \
 	`find . -name macros.mk`
@@ -91,8 +90,8 @@ perl -pi \
 	-e 's/^\/\* #undef (HAVE_STRNCASECMP) \*\/$/#define $1 1/;' \
 	-e 's/^#define (HAVE_STRLCPY) 1$/\/* #undef $1 *\//;' \
 	-e 's/^#define (HAVE_STRLCAT) 1$/\/* #undef $1 *\//;' \
-	-e 's/^#define (HAVE_ASPRINTF) 1$/\/* #undef $1 *\//;' \
-	-e 's/^#define (HAVE_VASPRINTF) 1$/\/* #undef $1 *\//;' \
+	-e 's/^\/\* #undef (HAVE_ASPRINTF) \*\/$/#define $1 1/;' \
+	-e 's/^\/\* #undef (HAVE_VSPRINTF) \*\/$/#define $1 1/;' \
 	-e 's/^\/\* #undef (HAVE_FLOCKFILE) \*\/$/#define $1 1/;' \
 	-e 's/^\/\* #undef (HAVE_FCNTL_THAT_CAN_LOCK_FIFOS) \*\/$/#define $1 1/;' \
 	-e 's/^\/\* #undef (HAVE_ISOC_REALLOC) \*\/$/#define $1 1/;' \
@@ -137,7 +136,7 @@ perl -pi \
 	-e 's/^#define (HAVE_UTIL_H) 1$/\/* #undef $1 *\//;' \
 	-e 's/^#define (HAVE_LIBUTIL_H) 1$/\/* #undef $1 *\//;' \
 	-e 's/^\/\* #undef (HAVE_SYS_STROPTS_H) \*\/$/#define $1 1/;' \
-	-e 's/^\/\* #undef (HAVE_VHANGUP) \*\/$/#define $1 1/;' \
+	-e 's/^#undef (HAVE_VHANGUP) 1$/\/* #define $1 *\//;' \
 	-e 's/^#define (HAVE__GETPTY) 1$/\/* #undef $1 *\//;' \
 	-e 's/^\/\* #undef (HAVE_TTYNAME_R) \*\/$/#define $1 1/;' \
 	-e 's/^\/\* #undef (HAVE_PTSNAME_R) \*\/$/#define $1 1/;' \

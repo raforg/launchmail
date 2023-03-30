@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # launchmail - https://libslack.org/launchmail
 #
@@ -16,20 +17,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
-# 20001127 raf <raf@raf.org>
+# XXXXXXXX raf <raf@raf.org>
 #
 
-WRAPPERS_INSDIR := $(DESTDIR)/usr/sbin
+# Modify Makefile to compile/install on Slackware (after conf/linux)
 
-WRAPPERS_MODULES := sendmail # smtppush
-WRAPPERS := $(patsubst %, $(WRAPPERS_SRCDIR)/%, $(WRAPPERS_MODULES))
+perl -pi \
+	-e 's{^(PREFIX := ).*$}{$1/usr};' \
+	-e 's/^(MAN_SYSDIR\s*:=).*$/$1 \$(PREFIX)\/man/;' \
+	-e 's/^(MAN_LOCDIR\s*:=).*$/$1 \$(PREFIX)\/man/;' \
+	`find . -name Makefile`
 
-ifeq ($(WRAPPERS_SRCDIR), .)
-WRAPPERS_MAIN := 1
-endif
-
-ifeq ($(WRAPPERS_MAIN), 1)
-INSTALL_TARGETS += install-wrappers
-UNINSTALL_TARGETS += uninstall-wrappers
-endif
-
+# vi:set ts=4 sw=4:

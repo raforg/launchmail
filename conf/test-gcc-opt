@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # launchmail - https://libslack.org/launchmail
 #
@@ -16,20 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
-# 20001127 raf <raf@raf.org>
+# XXXXXXXX raf <raf@raf.org>
 #
 
-WRAPPERS_INSDIR := $(DESTDIR)/usr/sbin
+# Test if the supplied gcc argument is supported
 
-WRAPPERS_MODULES := sendmail # smtppush
-WRAPPERS := $(patsubst %, $(WRAPPERS_SRCDIR)/%, $(WRAPPERS_MODULES))
+option="$1"
+gcc -E -xc /dev/null -Werror $option >/dev/null 2>/dev/null
+exit $?
 
-ifeq ($(WRAPPERS_SRCDIR), .)
-WRAPPERS_MAIN := 1
-endif
-
-ifeq ($(WRAPPERS_MAIN), 1)
-INSTALL_TARGETS += install-wrappers
-UNINSTALL_TARGETS += uninstall-wrappers
-endif
-
+# vi:set ts=4 sw=4:

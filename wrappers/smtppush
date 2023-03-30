@@ -1,6 +1,6 @@
 #!/bin/sh
-
-# launchmail - http://libslack.org/launchmail/
+#
+# launchmail - https://libslack.org/launchmail
 #
 # Copyright (C) 2000 raf <raf@raf.org>
 #
@@ -15,20 +15,19 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-# or visit http://www.gnu.org/copyleft/gpl.html
+# along with this program; if not, see <https://www.gnu.org/licenses/>.
+#
+# 20001127 raf <raf@raf.org>
+#
 
 # A wrapper to make launchmail look like smtppush
 # (http://www.toesinperil.com/~me/smtppush/)
 # To use this in mutt, put this in your ~/.muttrc:
 #
-#   set sendmail="/usr/local/bin/smtppush -S smtpserver"
-#
-# 20001127 raf <raf@raf.org>
+#   set sendmail="smtppush -S smtpserver"
 
 usage="usage: $0 [-hvV] [-f FROM] [-S SMTPSERVER] [-p PORT] RECIPIENT..."
-launchmail="/usr/local/bin/launchmail"
+launchmail="launchmail"
 
 die() { echo "$@" >&2; exit 1; }
 
@@ -70,4 +69,4 @@ args="$args -q -N -S $server"
 
 eval exec "$launchmail" $args
 
-# vi:set ts=4 sw=4
+# vi:set ts=4 sw=4:

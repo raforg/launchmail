@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 # launchmail - https://libslack.org/launchmail
 #
@@ -16,20 +17,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
-# 20001127 raf <raf@raf.org>
+# XXXXXXXX raf <raf@raf.org>
 #
 
-WRAPPERS_INSDIR := $(DESTDIR)/usr/sbin
+# Modify Makefile to change DESTDIR.
 
-WRAPPERS_MODULES := sendmail # smtppush
-WRAPPERS := $(patsubst %, $(WRAPPERS_SRCDIR)/%, $(WRAPPERS_MODULES))
+# Strip off the leading "--destdir=" from the command line option
 
-ifeq ($(WRAPPERS_SRCDIR), .)
-WRAPPERS_MAIN := 1
-endif
+if [ x"$1" = x ]
+then
+	echo "usage: $0 --destdir=..."
+	exit 1
+fi
 
-ifeq ($(WRAPPERS_MAIN), 1)
-INSTALL_TARGETS += install-wrappers
-UNINSTALL_TARGETS += uninstall-wrappers
-endif
+destdir="${1#--destdir=}"
 
+[ x"$destdir" != x ] && destdir=" $destdir"
+
+perl -pi \
+	-e 's{^(DESTDIR :=).*$}{$1'"$destdir"'}' \
+	Makefile
+
+# vi:set ts=4 sw=4:
