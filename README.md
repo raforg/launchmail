@@ -1,25 +1,27 @@
-README
-~~~~~~
-launchmail - an SMTP client with a sendmail compatible wrapper
+# README
 
-launchmail is a simple SMTP client. It prepares headers but otherwise
+*launchmail* - an SMTP client with a *sendmail*-compatible wrapper
+
+# INTRODUCTION
+
+*Launchmail* is a simple SMTP client. It prepares headers but otherwise
 ignores the content of the message being sent. It doesn't do attachments or
 MIME encoding. Some other software has to prepare the message. This just
 sends the message to the SMTP server of your choice. It probably shouldn't
-even prepare any headers (hence the -r and -N options).
+even prepare any headers (hence the `-r` and `-N` options).
 
-To use launchmail as a drop-in replacement for sendmail(8), install
-the sendmail wrapper script (to be found in the wrappers directory) as
-/usr/sbin/sendmail and make sure that the environment variable
-$SMTPSERVER is set. If $SMTPSERVER is not set, the sendmail wrapper
-will use localhost as the default which will probably not be very useful.
-The most seamless way to replace sendmail with launchmail is to edit
-the sendmail wrapper so that it knows which SMTP server to connect to.
+To use *launchmail* as a drop-in replacement for *sendmail(8)*, install
+the *sendmail* wrapper script (to be found in the `wrappers` directory) as
+`/usr/sbin/sendmail` and make sure that the environment variable
+`$SMTPSERVER` is set. If `$SMTPSERVER` is not set, the *sendmail* wrapper
+will use `localhost` as the default which will probably not be very useful.
+The most seamless way to use *launchmail* as *sendmail* is to edit
+the *sendmail* wrapper so that it knows which SMTP server to connect to.
 
-DESCRIPTION
-~~~~~~~~~~~
-usage: launchmail [options] [filename]
-options:
+# SYNOPSIS
+
+     usage: launchmail [options] [filename]
+     options:
 
       -h, --help                 - Print a help message then exit
       -V, --version              - Print a version message then exit
@@ -48,141 +50,107 @@ options:
       -q, --quiet                - Remain silent when an error occurs
       -N, --noheaders            - Do not insert any headers
 
-Launchmail is an STMP client.
-See the launchmail(1) manpage for more information.
+    Launchmail is an STMP client.
+    See the launchmail(1) manual entry for more information.
 
-Name: launchmail
-Version: 0.1
-Date: 20001127
-Author: raf <raf@raf.org>
-URL: http://libslack.org/launchmail/
+# DOCUMENTATION
 
-Copyright (C) 2000 raf <raf@raf.org>
+*Launchmail*'s documentation can be read here:
 
-This is free software released under the terms of the GPL:
+- <https://libslack.org/launchmail/manual/launchmail.1.html>
+- <https://raf.org/launchmail/manual/launchmail.1.html>
 
-    http://www.gnu.org/copyleft/gpl.html
+# DOWNLOAD
 
-There is no warranty; not even for merchantability or fitness
-for a particular purpose.
+*Launchmail*'s source distribution can be downloaded from these locations:
 
-Report bugs to raf <raf@raf.org>
+- <https://libslack.org/launchmail/download/launchmail-0.1.tar.gz>
+- <https://raf.org/launchmail/download/launchmail-0.1.tar.gz>
+- <https://github.com/raforg/launchmail/releases/download/v0.1/launchmail-0.1.tar.gz>
 
-INSTALL
-~~~~~~~
-Currently this is only known to work on Linux Redhat 6.0 and Solaris 2.6.
-Compiling on Solaris 2.6 requires running conf/solaris in the source
-directory. It is ready to compile on Linux as distributed so it is not
-necessary to run conf/linux. There isn't a real configure script so you
-will no doubt encounter problems on other systems. An ANSI C and POSIX
-environment will help greatly.
+This is free software released under the terms of the GNU General Public
+Licence version 3 or later (*GPLv3+*).
 
-If your system doesn't have snprintf(3), GNU getopt_long(3) or vsscanf(3),
-uncomment the relevant lines in the libslack/macros.mk file to include them
-in libslack.
+# INSTALL
 
-If your system doesn't have POSIX 1003.2 compliant regex functions, either:
-install the GNU implementation, ftp://ftp.gnu.org/gnu/regex/regex-0.12.tar.gz
-[290K] (doesn't support internationalisation); or install Henry Spencer's
-implementation, ftp://ftp.zoo.toronto.edu/pub/regex.shar [157K].
+*Launchmail* should be easy to install on at least the following systems:
 
-If you really, really, really don't want the regular expression functions,
-uncomment REGEX_MISSING in libslack/macros.mk to enable the rest of the
-library to be compiled.
+	Linux, FreeBSD, OpenBSD, NetBSD, macOS, Solaris,
+	OpenSolaris, kFreeBSD, GNU/Hurd
 
-If you have Linux system with a version of LinuxThreads that is older than 0.9,
-I urge you to upgrade to the latest version (and the latest corresponding
-version of glibc). They are available from http://ftp.gnu.org/pub/gnu/glibc/
+For these systems, just run the `configure` script in the source directory.
+It will run the appropriate script in the `conf` directory for the current
+host. Perl and GNU make are required for building.
 
-To build and test:
+Note: There isn't an *autoconf* configure script so you will no doubt encounter
+problems on other systems. An ISO C and POSIX/XPG4 environment will help
+greatly. If your system doesn't have *snprintf(3)*, GNU *getopt_long(3)*,
+*vsscanf(3)*, *strcasecmp(3)*, *strncasecmp(3*), *strlcpy(3)* or *strlcat(3)*,
+uncomment the relevant lines in the `libslack/config.h` file to include them
+in *libslack*.
 
-        tar xzf launchmail-0.1.tar.gz
-        cd launchmail-0.1
-        conf/<your-system>         # if applicable (i.e. solaris)
-        make depend
-        make
-        make test                  # note: compiling the tests can take ages
+If your system doesn't have POSIX 1003.2 compliant regex functions, or they
+are buggy, either: install the GNU implementation,
+ftp://ftp.gnu.org/gnu/regex/regex-0.12.tar.gz [290K]
+(doesn't support internationalisation);
+or install Henry Spencer's implementation,
+ftp://ftp.zoo.toronto.edu/pub/regex.shar [157K].
 
-To install the launchmail program and its manpage:
+To build *launchmail*:
 
-        make install-launchmail
+        tar xzf launchmail-0.2.tar.gz
+        cd launchmail-0.2
+        ./configure # iff linux, openbsd, freebsd, netbsd, macosx, solaris, gnuhurd or kfreebsd
+        make        # must be GNU make
+        sudo make install
 
-To install the sendmail wrapper:
+This will install (approximately, depending on the operating system):
 
-        make install-wrappers
+        /usr/local/bin/launchmail
+        /usr/local/share/man/man1/launchmail.1
 
-To install libslack and its manpages:
+To uninstall *launchmail*:
 
-        make install-slack
+        sudo make uninstall
 
-To install both:
+To install/uninstall under `/usr` instead of `/usr/local`:
 
-        make install
+        sudo make PREFIX=/usr install
+        sudo make PREFIX=/usr uninstall
 
-For more details:
+To install the *sendmail* wrapper:
+
+        sudo make install-wrappers
+
+To uninstall the *sendmail* wrapper:
+
+        sudo make uninstall-wrappers
+
+To check out the `configure` script which can override paths and features:
+
+        ./configure --help
+
+To see what other things the `Makefile` can do:
 
         make help
 
-The manpage for launchmail is launchmail(1). There is one manpage for each
-module in libslack (rather than one for each function). They are daemon(3),
-err(3), fio(3), hsort(3), lim(3), list(3), log(3), map(3), mem(3), msg(3),
-net(3), opt(3), prog(3), prop(3), sig(3) and str(3). If necessary, the
-manpages getopt(3), snprintf(3) and vsscanf(3) are created as well.
-
 REQUIREMENTS
-~~~~~~~~~~~~
-Requires perl to run the scripts in the conf directory.
-Requires gcc to compile the source.
-Requires pod2man (comes with perl) to make the manpages.
-Requires pod2html (comes with perl) to make the html manpages.
-Requires perl and GNU tar to make the distribution.
-Requires POSIX 1003.2 compliant regex functions. See INSTALL.
-Requires libpthread.
+============
 
-COPYING
-~~~~~~~
-launchmail - an SMTP client with a sendmail compatible wrapper
-Copyright (C) 2000 raf <raf@raf.org>
+- Requires perl to run the configure scripts.
+- Requires a C compiler to compile the source.
+- Requires pod2man (comes with perl) to make the manual entry.
+- Requires pod2html (comes with perl) to make the html manual entry.
+- Requires perl and GNU tar to make the distribution.
+- Requires POSIX 1003.2 compliant regex functions. See INSTALL.
+- Requires libpthread.
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+--------------------------------------------------------------------------------
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
+    URL: https://libslack.org/launchmail
+    URL: https://raf.org/launchmail
+    GIT: https://github.com/raforg/launchmail
+    GIT: https://codeberg.org/raforg/launchmail
+    Date: XXXXXXXX
+    Author: raf <raf@raf.org>
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-    or visit http://www.gnu.org/copyleft/gpl.html
-
-libslack - A UNIX/C library of general utilities for programmers with slack
-Copyright (C) 1999, 2000 raf <raf@raf.org>
-
-    This library is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-    or visit http://www.gnu.org/copyleft/gpl.html
-
-HISTORY
-~~~~~~~
-0.1
-    - Initial version
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-URL: http://libslack.org/launchmail/
-Date: 20001127
-Author: raf <raf@raf.org>
