@@ -16,7 +16,7 @@
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, see <https://www.gnu.org/licenses/>.
 *
-* 20001127 raf <raf@raf.org>
+* 20230330 raf <raf@raf.org>
 */
 
 /*
@@ -262,7 +262,7 @@ L<mpack(1)|mpack(1)>
 
 =head1 AUTHOR
 
-20001127 raf <raf@raf.org>
+20230330 raf <raf@raf.org>
 
 =cut
 

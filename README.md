@@ -64,9 +64,9 @@ the *sendmail* wrapper so that it knows which SMTP server to connect to.
 
 *Launchmail*'s source distribution can be downloaded from these locations:
 
-- <https://libslack.org/launchmail/download/launchmail-0.1.tar.gz>
-- <https://raf.org/launchmail/download/launchmail-0.1.tar.gz>
-- <https://github.com/raforg/launchmail/releases/download/v0.1/launchmail-0.1.tar.gz>
+- <https://libslack.org/launchmail/download/launchmail-0.2.tar.gz>
+- <https://raf.org/launchmail/download/launchmail-0.2.tar.gz>
+- <https://github.com/raforg/launchmail/releases/download/v0.2/launchmail-0.2.tar.gz>
 
 This is free software released under the terms of the GNU General Public
 Licence version 3 or later (*GPLv3+*).
@@ -151,6 +151,6 @@ REQUIREMENTS
     URL: https://raf.org/launchmail
     GIT: https://github.com/raforg/launchmail
     GIT: https://codeberg.org/raforg/launchmail
-    Date: XXXXXXXX
+    Date: 20230330
     Author: raf <raf@raf.org>
 

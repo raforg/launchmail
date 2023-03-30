@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <https://www.gnu.org/licenses/>.
 #
-# 20001127 raf <raf@raf.org>
+# 20230330 raf <raf@raf.org>
 #
 
 # Uncomment this to disable debugging completely
@@ -24,8 +24,8 @@
 # LAUNCH_DEFINES += -DNDEBUG
 
 LAUNCH_NAME := launchmail
-LAUNCH_VERSION := 0.1
-LAUNCH_DATE := 20001127
+LAUNCH_VERSION := 0.2
+LAUNCH_DATE := 20230330
 LAUNCH_URL := https://libslack.org/launchmail
 LAUNCH_ID := $(LAUNCH_NAME)-$(LAUNCH_VERSION)
 LAUNCH_DIST := $(LAUNCH_ID).tar.gz

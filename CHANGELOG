@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.2 (XXXXXXXX)
+0.2 (20230330)
 
     - Upgrade internal libslack from 0.3 to 0.7.3
     - Remove MANIFEST
@@ -23,7 +23,7 @@ CHANGELOG
     URL: https://raf.org/launchmail
     GIT: https://github.com/raforg/launchmail
     GIT: https://codeberg.org/raforg/launchmail
-    Date: XXXXXXXX
+    Date: 20230330
     Author: raf <raf@raf.org>
 
 
