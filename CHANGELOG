@@ -1,0 +1,30 @@
+CHANGELOG
+=========
+
+0.2 (XXXXXXXX)
+
+    - Upgrade internal libslack from 0.3 to 0.7.3
+    - Remove MANIFEST
+
+    - Add/Update conf scripts for many more operating systems
+    - Add ./configure script (not autoconf)
+    - Update to compile cleanly again
+    - Add CODE_OF_CONDUCT.md
+    - Add LICENSES/* and .reuse/dep5 (REUSE 3.0 compliant)
+    - Add LICENSE
+    - Split README into README.md, COPYING, and CHANGELOG
+
+0.1 (20001127)
+
+    - Initial version
+
+--------------------------------------------------------------------------------
+
+    URL: https://libslack.org/launchmail
+    URL: https://raf.org/launchmail
+    GIT: https://github.com/raforg/launchmail
+    GIT: https://codeberg.org/raforg/launchmail
+    Date: XXXXXXXX
+    Author: raf <raf@raf.org>
+
+
