@@ -1,7 +1,7 @@
 /*
 * launchmail - https://libslack.org/launchmail
 *
-* Copyright (C) 2000 raf <raf@raf.org>
+* Copyright (C) 2000, 2023 raf <raf@raf.org>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -1081,7 +1081,7 @@ int main(int ac, char **av)
 	prog_set_url(LAUNCH_URL);
 	prog_set_legal
 	(
-		"Copyright (C) 2000 raf <raf@raf.org>\n"
+		"Copyright (C) 2000, 2023 raf <raf@raf.org>\n"
 		"\n"
 		"This is free software released under the terms of the GPLv2+:\n"
 		"\n"

@@ -4,7 +4,7 @@ Upstream-Contact: raf <raf@raf.org>
 Source: https://libslack.org/launchmail
 
 Files: *
-Copyright: 2000 raf <raf@raf.org>
+Copyright: 2000, 2023 raf <raf@raf.org>
 License: GPL-2.0-or-later
 
 Files: libslack/*
